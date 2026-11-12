@@ -1,0 +1,14 @@
+{
+  "name": "html2apk",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": { "test": "node test/builder.test.js" },
+  "dependencies": {
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/core": "^7.0.0",
+    "@capacitor/splash-screen": "^7.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.0.0"
+  }
+}

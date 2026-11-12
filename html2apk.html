@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>محوّل HTML إلى APK</title>
+<style>
+:root{--bg:#020617;--card:#0f172a;--line:#1e293b;--tx:#e2e8f0;--mut:#94a3b8;--pri:#6366f1;--ok:#34d399;--bad:#f87171;--warn:#fbbf24}
+:root[data-t=light]{--bg:#f1f5f9;--card:#fff;--line:#cbd5e1;--tx:#0f172a;--mut:#475569}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.6 system-ui,"Segoe UI",Tahoma,sans-serif;padding:16px;padding-bottom:40px}
+main{max-width:560px;margin:0 auto;display:grid;gap:14px}
+h1{margin:6px 0 0;font-size:22px}
+p.sub{margin:0;color:var(--mut);font-size:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;display:grid;gap:10px}
+.card h2{margin:0;font-size:16px}
+label{font-size:13px;color:var(--mut);display:grid;gap:4px}
+input,textarea,select{width:100%;background:var(--bg);color:var(--tx);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit;min-height:44px}
+input[type=file]{padding:8px}
+input[type=checkbox]{width:auto;min-height:0}
+input[dir=ltr]{text-align:left}
+button{font:inherit;border:0;border-radius:12px;padding:12px 16px;min-height:46px;cursor:pointer;background:var(--pri);color:#fff;font-weight:600}
+button.ghost{background:transparent;border:1px solid var(--line);color:var(--tx)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.chk{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--mut)}
+.hint{font-size:12.5px;color:var(--mut);margin:0}
+.warn{color:var(--warn)}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.steps li{display:flex;gap:10px;align-items:center;font-size:14px;color:var(--mut)}
+.steps li .d{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:12px;flex:none}
+.steps li.run{color:var(--tx)} .steps li.run .d{border-color:var(--pri);border-top-color:transparent;animation:sp 1s linear infinite}
+.steps li.done{color:var(--tx)} .steps li.done .d{background:var(--ok);border-color:var(--ok);color:#022}
+.steps li.fail{color:var(--bad)} .steps li.fail .d{background:var(--bad);border-color:var(--bad);color:#200}
+@keyframes sp{to{transform:rotate(360deg)}}
+#msg{font-size:14px;min-height:20px}
+#msg.bad{color:var(--bad)} #msg.ok{color:var(--ok)}
+a.dl{display:block;text-align:center;text-decoration:none;background:var(--ok);color:#022;border-radius:12px;padding:14px;font-weight:700}
+a{color:var(--pri)}
+.prev{width:64px;height:64px;border-radius:14px;border:1px solid var(--line);object-fit:cover;background:var(--bg)}
+details summary{cursor:pointer;font-weight:600}
+details ol{margin:8px 0 0;padding-inline-start:20px;font-size:14px;color:var(--mut)}
+textarea.code{direction:ltr;text-align:left;font:13px/1.5 ui-monospace,Consolas,monospace;min-height:180px;resize:vertical}
+iframe.pv{width:100%;height:240px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{background:transparent;border:1px solid var(--line);color:var(--tx);padding:8px 12px;min-height:40px;font-weight:500}
+.seg button.on{background:var(--pri);border-color:var(--pri);color:#fff}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opts{display:grid;gap:8px}
+.dls{display:grid;gap:8px}
+code{direction:ltr;unicode-bidi:embed;background:var(--bg);padding:1px 6px;border-radius:6px;font-size:13px}
+</style>
+</head>
+<body>
+<main>
+  <div>
+    <h1>📦 محوّل HTML إلى APK</h1>
+    <p class="sub">ارفع ملف HTML، اكتب اسم التطبيق، وGitHub يبنيه لك. من غير علامة مائية.</p>
+  </div>
+
+  <section class="card">
+    <h2>1) حساب GitHub</h2>
+    <label>المستودع (owner/repo)
+      <input id="repo" dir="ltr" placeholder="mohamed/html2apk" autocapitalize="off" autocomplete="off" spellcheck="false">
+    </label>
+    <label>التوكن (Personal Access Token)
+      <input id="token" dir="ltr" type="password" placeholder="github_pat_…" autocomplete="off" spellcheck="false">
+    </label>
+    <label class="chk"><input type="checkbox" id="rememberTok"> احفظ التوكن على الجهاز ده (غير مُشفّر)</label>
+    <details>
+      <summary>إزاي أجهّز المستودع والتوكن؟</summary>
+      <ol>
+        <li>ارفع محتوى مشروع <code>html2apk</code> على مستودع جديد في GitHub، وضيف الأربع Secrets (<code>KEYSTORE_BASE64</code> و<code>KEYSTORE_PASSWORD</code> و<code>KEY_ALIAS</code> و<code>KEY_PASSWORD</code>).</li>
+        <li>من Settings ← Developer settings ← Fine-grained tokens اعمل توكن لمستودع واحد بس، بصلاحيات <b>Contents: Read and write</b> و<b>Actions: Read and write</b>.</li>
+        <li>الصق اسم المستودع والتوكن هنا. التوكن بيتبعت لـ api.github.com بس.</li>
+      </ol>
+    </details>
+    <p class="hint">لو المستودع عام (Public) أي حد يقدر يشوف ملف HTML واللي بتبنيه. استخدم مستودع خاص لو الملف سري.</p>
+  </section>
+
+  <section class="card">
+    <h2>2) مصدر التطبيق</h2>
+    <div class="seg" id="srcSeg" role="group">
+      <button type="button" data-s="html" class="on">ملف HTML</button>
+      <button type="button" data-s="editor">محرر</button>
+      <button type="button" data-s="zip">ZIP / مجلد</button>
+      <button type="button" data-s="url">رابط موقع</button>
+    </div>
+    <div data-pane="html">
+      <label>ملف HTML
+        <input id="file" type="file" accept=".html,.htm,text/html">
+      </label>
+      <p class="hint warn" id="fileWarn" hidden></p>
+    </div>
+    <div data-pane="editor" hidden>
+      <label>اكتب أو الصق كود HTML
+        <textarea id="code" class="code" spellcheck="false" placeholder="<!doctype html>&#10;<h1>مرحبا</h1>"></textarea>
+      </label>
+      <div class="seg" id="tplSeg"><span class="hint" style="align-self:center">قوالب:</span>
+        <button type="button" data-t="game">لعبة HTML5</button>
+        <button type="button" data-t="device">واجهة الجهاز</button>
+        <button type="button" data-t="ads">AdMob تجريبي</button>
+      </div>
+      <iframe id="pv" class="pv" sandbox="allow-scripts" title="معاينة"></iframe>
+    </div>
+    <div data-pane="zip" hidden>
+      <label>ملف ZIP (لازم فيه index.html)
+        <input id="zip" type="file" accept=".zip,application/zip">
+      </label>
+      <p class="hint">لو عندك مجلد، اضغطه ZIP الأول. الصور والخطوط وملفات CSS/JS كلها بتتضمن.</p>
+    </div>
+    <div data-pane="url" hidden>
+      <label>رابط الموقع (https فقط)
+        <input id="url" dir="ltr" placeholder="https://example.com" autocapitalize="off" spellcheck="false">
+      </label>
+      <p class="hint">التطبيق هيفتح الموقع مباشرة ومحتاج إنترنت.</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>3) بيانات التطبيق</h2>
+    <label>اسم التطبيق
+      <input id="name" placeholder="حاسبتي" maxlength="40">
+    </label>
+    <label>معرّف الحزمة (ثابت للتطبيق الواحد عشان التحديثات تتثبّت فوق القديم)
+      <input id="appId" dir="ltr" placeholder="com.example.myapp" autocapitalize="off" spellcheck="false">
+    </label>
+    <div class="grid2">
+      <label>رقم الإصدار
+        <input id="ver" dir="ltr" value="1.0" maxlength="20">
+      </label>
+      <label>versionCode
+        <input id="vcode" dir="ltr" inputmode="numeric" placeholder="تلقائي (يزيد كل بناء)">
+      </label>
+    </div>
+    <div class="row">
+      <label style="flex:1;min-width:180px">الأيقونة (اختياري، أي صورة، بتتقص مربعة)
+        <input id="icon" type="file" accept="image/*">
+      </label>
+      <img id="prev" class="prev" alt="" hidden>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>4) الشكل والسلوك</h2>
+    <div class="grid2">
+      <label>اتجاه الشاشة
+        <select id="orient"><option value="auto">تلقائي</option><option value="portrait">رأسي</option><option value="landscape">أفقي</option></select>
+      </label>
+      <label>لون الخلفية
+        <input id="bg" type="color" value="#ffffff">
+      </label>
+      <label>لون شاشة البداية
+        <input id="splashColor" type="color" value="#ffffff">
+      </label>
+      <label>مدة شاشة البداية (ثواني)
+        <input id="splashSec" type="number" min="0" max="5" step="0.5" value="1">
+      </label>
+    </div>
+    <div class="opts">
+      <label class="chk"><input type="checkbox" id="fullscreen"> ملء الشاشة (إخفاء شريط الحالة والتنقل)</label>
+      <label class="chk"><input type="checkbox" id="keepOn"> إبقاء الشاشة شغالة</label>
+      <label class="chk"><input type="checkbox" id="desktop"> وضع سطح المكتب (صفحة واسعة وتكبير)</label>
+      <label class="chk"><input type="checkbox" id="mixed"> السماح بمحتوى مختلط (http داخل https)</label>
+      <label class="chk"><input type="checkbox" id="ptr"> سحب للتحديث (Pull to refresh)</label>
+      <label class="chk"><input type="checkbox" id="downloads" checked> مدير التنزيلات (ملفات وblob وصور canvas وPDF)</label>
+      <label class="chk"><input type="checkbox" id="bridge" checked> جسر الجهاز <code>window.AndroidAPI</code> (اهتزاز، فلاش، مشاركة، حساسات…)</label>
+    </div>
+    <p class="hint">الجسر بيتقفل تلقائياً في وضع "رابط موقع" لأمانك، عشان موقع خارجي ما ياخدش وصول للجهاز.</p>
+    <label>الكاش
+      <select id="cache"><option value="default">افتراضي</option><option value="noCache">من غير كاش</option><option value="cacheElseNetwork">الكاش أولاً</option></select>
+    </label>
+    <label>رابط عميق (اختياري): الـ scheme
+      <input id="scheme" dir="ltr" placeholder="myapp  ←  myapp://" autocapitalize="off" spellcheck="false">
+    </label>
+    <div class="opts">
+      <span class="hint">الصلاحيات المطلوبة:</span>
+      <label class="chk"><input type="checkbox" data-perm="camera"> كاميرا</label>
+      <label class="chk"><input type="checkbox" data-perm="microphone"> ميكروفون</label>
+      <label class="chk"><input type="checkbox" data-perm="location"> الموقع GPS</label>
+      <label class="chk"><input type="checkbox" data-perm="vibration"> اهتزاز</label>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>5) الإعلانات (AdMob، اختياري)</h2>
+    <label class="chk"><input type="checkbox" id="adsOn"> تفعيل الإعلانات</label>
+    <div id="adsBox" hidden class="opts">
+      <label class="chk"><input type="checkbox" id="adsTest" checked> وضع تجريبي (معرّفات Google التجريبية، آمن للتجربة)</label>
+      <div id="adsIds" hidden class="opts">
+        <label>AdMob App ID <input id="adApp" dir="ltr" placeholder="ca-app-pub-0000000000000000~0000000000" spellcheck="false"></label>
+        <label>Banner ID <input id="adBanner" dir="ltr" placeholder="ca-app-pub-…/…" spellcheck="false"></label>
+        <label>Interstitial ID <input id="adInter" dir="ltr" placeholder="ca-app-pub-…/…" spellcheck="false"></label>
+        <label>Rewarded ID (اختياري) <input id="adRew" dir="ltr" placeholder="ca-app-pub-…/…" spellcheck="false"></label>
+      </div>
+      <div class="grid2">
+        <label>مكان البانر
+          <select id="adPos"><option value="bottom">تحت</option><option value="top">فوق</option><option value="none">من غير بانر</option></select>
+        </label>
+        <label>الإعلان البيني
+          <select id="adMode"><option value="none">بدون</option><option value="timer">كل مدة (ثواني)</option><option value="pages">كل عدد صفحات</option></select>
+        </label>
+      </div>
+      <label id="adEveryBox" hidden>العدد <input id="adEvery" type="number" min="1" max="3600" value="60"></label>
+      <p class="hint">الإعلان بفيديو مكافأة بتستدعيه من الصفحة: <code>AndroidAPI.showRewarded()</code> وبيرجع <code>window.onRewarded(amount)</code>. لازم يكون الجسر مفعّل. في الوضع الحقيقي الإعلانات بتظهر بعد ما حساب AdMob يتفعّل.</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>6) المخرجات</h2>
+    <div class="opts">
+      <label class="chk"><input type="checkbox" id="oApk" checked> APK (للتثبيت المباشر)</label>
+      <label class="chk"><input type="checkbox" id="oAab"> AAB (للنشر على Google Play)</label>
+      <label class="chk"><input type="checkbox" id="oProj"> مشروع Android Studio (ZIP)</label>
+    </div>
+  </section>
+
+  <button id="go">ابنِ الـ APK</button>
+
+  <section class="card" id="prog" hidden>
+    <h2>التقدّم</h2>
+    <ul class="steps" id="steps"></ul>
+    <div id="msg" role="status"></div>
+    <div id="dl" class="dls" hidden><span id="dls" class="dls" style="display:grid;gap:8px"></span></div>
+    <a id="runLink" hidden target="_blank" rel="noopener" class="hint">متابعة البناء على GitHub</a>
+  </section>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  const $ = s => document.querySelector(s);
+  const API = 'https://api.github.com';
+  const LS = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }, del(k) { try { localStorage.removeItem(k); } catch (e) {} } };
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const MAX_BYTES = 10 * 1024 * 1024, MAX_ZIP = 25 * 1024 * 1024;
+  const JAVA_KW = new Set('abstract assert boolean break byte case catch char class const continue default do double else enum extends final finally float for goto if implements import instanceof int interface long native new package private protected public return short static strictfp super switch synchronized this throw throws transient try void volatile while true false null _'.split(' '));
+  const BAD_SCHEMES = ['http', 'https', 'file', 'content', 'javascript', 'data', 'intent', 'market'];
+  let source = 'html';
+
+  // ---- حفظ الحقول
+  const saved = ['repo', 'name', 'appId', 'ver', 'url', 'scheme'];
+  saved.forEach(id => { const v = LS.get('h2a_' + id); if (v) $('#' + id).value = v; });
+  const tok = LS.get('h2a_token'); if (tok) { $('#token').value = tok; $('#rememberTok').checked = true; }
+  if (!$('#appId').value) $('#appId').value = 'com.app.a' + Math.random().toString(36).slice(2, 8).replace(/[^a-z0-9]/g, 'x');
+
+  // ---- مساعدات
+  const validRepo = s => /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(s);
+  const validId = s => /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/.test(s);
+  const validVer = s => /^[0-9A-Za-z._-]{1,20}$/.test(s);
+
+  function b64(buf) {
+    const b = new Uint8Array(buf); let s = '';
+    for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000));
+    return btoa(s);
+  }
+  const readBuf = f => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(new Error('تعذّرت قراءة الملف')); r.readAsArrayBuffer(f); });
+
+  async function gh(path, o = {}) {
+    const token = $('#token').value.trim();
+    const r = await fetch(API + path, {
+      method: o.method || 'GET',
+      headers: { Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + token, 'X-GitHub-Api-Version': '2022-11-28', ...(o.body ? { 'Content-Type': 'application/json' } : {}) },
+      body: o.body ? JSON.stringify(o.body) : undefined
+    });
+    let data = null; try { data = await r.json(); } catch (e) { /* no body */ }
+    if (!r.ok && !(o.okStatus || []).includes(r.status)) {
+      const err = new Error((data && data.message) || ('HTTP ' + r.status)); err.status = r.status; throw err;
+    }
+    return { status: r.status, data };
+  }
+  function explain(e) {
+    if (e.status === 401) return 'التوكن غلط أو منتهي.';
+    if (e.status === 403) return 'التوكن ملوش صلاحية كافية (محتاج Contents وActions: Read and write)، أو وصلت لحد الطلبات. ' + e.message;
+    if (e.status === 404) return 'المستودع مش موجود أو التوكن مش مديله صلاحية عليه.';
+    if (e.status === 422) return 'GitHub رفض الطلب: ' + e.message + ' (اتأكد إن ملف workflow اسمه build.yml موجود في المستودع).';
+    if (e instanceof TypeError) return 'مفيش اتصال بالإنترنت أو الطلب اتمنع.';
+    return e.message;
+  }
+
+  // ---- فحص الملف
+  $('#file').addEventListener('change', async () => {
+    const w = $('#fileWarn'); w.hidden = true;
+    const f = $('#file').files[0]; if (!f) return;
+    if (!$('#name').value) $('#name').value = f.name.replace(/\.html?$/i, '').slice(0, 40);
+    if (f.size > MAX_BYTES) { w.textContent = 'الملف أكبر من 10 ميجا.'; w.hidden = false; return; }
+    try {
+      const t = new TextDecoder('utf-8').decode(await readBuf(f));
+      const ext = [...t.matchAll(/(?:src|href)\s*=\s*["'](?!https?:|data:|#|mailto:|tel:|javascript:|\/\/)([^"']+)["']/gi)].map(m => m[1]).filter(x => !/^\s*$/.test(x));
+      if (ext.length) { w.textContent = 'الملف بيشير لملفات جانبية (' + [...new Set(ext)].slice(0, 3).join('، ') + '…). هيتضمّن ملف HTML بس، فاستخدم نسخة الملف الواحد (CSS وJS جواه).'; w.hidden = false; }
+    } catch (e) { /* تجاهل */ }
+  });
+
+  // ---- قوالب
+  const TPL = {
+    game: `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>اضغط الهدف</title>
+<style>body{margin:0;background:#0b1020;color:#fff;font-family:sans-serif;text-align:center;overflow:hidden;touch-action:manipulation}#hud{padding:12px;font-size:20px}#a{position:absolute;width:64px;height:64px;border-radius:50%;background:radial-gradient(#fbbf24,#f97316);box-shadow:0 0 24px #f97316}</style></head>
+<body><div id="hud">النقاط: <b id="s">0</b> · الوقت: <b id="t">30</b></div><div id="a"></div><script>
+var s=0,t=30,a=document.getElementById('a'),over=false;
+function move(){a.style.left=Math.random()*(innerWidth-64)+'px';a.style.top=60+Math.random()*(innerHeight-130)+'px';}
+a.onclick=function(){if(over)return;s++;document.getElementById('s').textContent=s;move();};
+move();var iv=setInterval(function(){t--;document.getElementById('t').textContent=t;if(t<=0){over=true;clearInterval(iv);a.style.display='none';document.getElementById('hud').innerHTML='انتهت! نقاطك: <b>'+s+'</b> · اضغط لإعادة اللعب';document.body.onclick=function(){location.reload()}}},1000);
+<\/script></body></html>`,
+    device: `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>واجهة الجهاز</title>
+<style>body{font-family:sans-serif;background:#0f172a;color:#e2e8f0;padding:16px}button{display:block;width:100%;margin:8px 0;padding:14px;font-size:16px;border:0;border-radius:12px;background:#6366f1;color:#fff}pre{background:#020617;padding:10px;border-radius:10px;white-space:pre-wrap}</style></head>
+<body><h2>تجربة AndroidAPI</h2><p id="st">بتشتغل جوه التطبيق بس.</p>
+<button onclick="A().vibrate(300)">اهتزاز</button><button onclick="A().flashlight(true)">تشغيل الفلاش</button><button onclick="A().flashlight(false)">إطفاء الفلاش</button>
+<button onclick="A().toast('أهلا من JS')">Toast</button><button onclick="A().alert('تنبيه','ده نظام Android')">نافذة نظام</button><button onclick="A().share('جرّب تطبيقي')">مشاركة</button>
+<button onclick="out.textContent=A().deviceInfo()+'\\nالبطارية: '+A().batteryLevel()+'%'">معلومات الجهاز</button>
+<button onclick="A().startSensor()">بدء الحساس</button><button onclick="A().stopSensor()">إيقاف الحساس</button>
+<button onclick="A().saveFile('hello.txt','text/plain',btoa('hello'))">حفظ ملف في التنزيلات</button>
+<button onclick="navigator.geolocation.getCurrentPosition(function(p){out.textContent='GPS: '+p.coords.latitude+','+p.coords.longitude},function(e){out.textContent='GPS: '+e.message})">الموقع</button><pre id="out"></pre>
+<script>var out=document.getElementById('out');function A(){return window.AndroidAPI||{vibrate:function(){},flashlight:function(){},toast:function(){},alert:function(){},share:function(){},deviceInfo:function(){return'{}'},batteryLevel:function(){return -1},startSensor:function(){},stopSensor:function(){},saveFile:function(){}}}
+if(window.AndroidAPI)document.getElementById('st').textContent='الجسر شغال ✓';window.onAndroidSensor=function(v){out.textContent='x='+v.x.toFixed(2)+' y='+v.y.toFixed(2)+' z='+v.z.toFixed(2)};<\/script></body></html>`,
+    ads: `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AdMob تجريبي</title>
+<style>body{font-family:sans-serif;background:#0f172a;color:#e2e8f0;padding:16px;text-align:center}button{padding:14px 20px;font-size:16px;border:0;border-radius:12px;background:#10b981;color:#fff}</style></head>
+<body><h2>تطبيق AdMob تجريبي</h2><p>العملات: <b id="c">0</b></p><button onclick="watch()">شاهد إعلان واحصل على 10 عملات</button><p>الإعلان البيني: <button onclick="inter()">اعرض</button></p>
+<script>var c=0;function watch(){if(window.AndroidAPI)AndroidAPI.showRewarded();else alert('بيشتغل جوه التطبيق بس')}function inter(){if(window.AndroidAPI)AndroidAPI.showInterstitial()}
+window.onRewarded=function(n){c+=10;document.getElementById('c').textContent=c};<\/script>
+<p style="margin-top:40px;color:#94a3b8">فعّل الإعلانات (وضع تجريبي) وفعّل Rewarded من الإعدادات.</p></body></html>`
+  };
+  document.querySelectorAll('#tplSeg [data-t]').forEach(b => b.addEventListener('click', () => {
+    $('#code').value = TPL[b.dataset.t];
+    if (!$('#name').value || $('#name').dataset.auto) { $('#name').value = { game: 'لعبة', device: 'واجهة الجهاز', ads: 'AdMob تجريبي' }[b.dataset.t]; $('#name').dataset.auto = '1'; }
+    if (b.dataset.t === 'ads') { $('#adsOn').checked = true; $('#adsOn').dispatchEvent(new Event('change')); $('#adMode').value = 'pages'; $('#adMode').dispatchEvent(new Event('change')); $('#adEvery').value = 3; }
+    preview();
+  }));
+
+  // ---- الإعلانات
+  function adsUi() {
+    const on = $('#adsOn').checked;
+    $('#adsBox').hidden = !on;
+    $('#adsIds').hidden = $('#adsTest').checked;
+    $('#adEveryBox').hidden = $('#adMode').value === 'none';
+  }
+  ['#adsOn', '#adsTest', '#adMode'].forEach(id => $(id).addEventListener('change', adsUi));
+  adsUi();
+
+  // ---- مصدر التطبيق
+  function setSource(v) {
+    source = v;
+    document.querySelectorAll('#srcSeg button').forEach(b => b.classList.toggle('on', b.dataset.s === v));
+    document.querySelectorAll('[data-pane]').forEach(d => { d.hidden = d.dataset.pane !== v; });
+    if (v === 'editor') preview();
+  }
+  document.querySelectorAll('#srcSeg button').forEach(b => b.addEventListener('click', () => setSource(b.dataset.s)));
+  let pvT = null;
+  function preview() { clearTimeout(pvT); pvT = setTimeout(() => { $('#pv').srcdoc = $('#code').value; }, 300); }
+  $('#code').addEventListener('input', preview);
+  $('#zip').addEventListener('change', () => { const f = $('#zip').files[0]; if (f && !$('#name').value) $('#name').value = f.name.replace(/\.zip$/i, '').slice(0, 40); });
+  $('#icon').addEventListener('change', async () => {
+    const f = $('#icon').files[0], p = $('#prev'); p.hidden = !f; if (!f) return;
+    try { p.src = URL.createObjectURL(await toIcon(f).then(b => b)); } catch (e) { p.hidden = true; }
+  });
+
+  // صورة -> PNG مربع 1024 (قص من النص)
+  function toIcon(file) {
+    return new Promise((res, rej) => {
+      const url = URL.createObjectURL(file), img = new Image();
+      img.onload = () => {
+        const S = 1024, c = document.createElement('canvas'); c.width = c.height = S;
+        const x = c.getContext('2d'), m = Math.min(img.width, img.height);
+        x.fillStyle = '#ffffff'; x.fillRect(0, 0, S, S);
+        x.drawImage(img, (img.width - m) / 2, (img.height - m) / 2, m, m, 0, 0, S, S);
+        URL.revokeObjectURL(url);
+        c.toBlob(b => b ? res(b) : rej(new Error('تعذّر تجهيز الأيقونة')), 'image/png');
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('الأيقونة مش صورة صالحة')); };
+      img.src = url;
+    });
+  }
+
+  // ---- خطوات التقدم
+  const STEPS = ['فحص المستودع والتوكن', 'رفع ملف التطبيق', 'بدء البناء', 'البناء (5–10 دقايق)', 'تجهيز رابط التنزيل'];
+  function showSteps() {
+    $('#prog').hidden = false; $('#dl').hidden = true; $('#runLink').hidden = true; setMsg('', '');
+    $('#steps').innerHTML = STEPS.map((s, i) => `<li data-i="${i}"><span class="d"></span><span>${s}</span></li>`).join('');
+  }
+  function st(i, state) {
+    const li = $('#steps li[data-i="' + i + '"]'); if (!li) return;
+    li.className = state; li.querySelector('.d').textContent = state === 'done' ? '✓' : state === 'fail' ? '!' : '';
+  }
+  function setMsg(t, c) { const m = $('#msg'); m.textContent = t; m.className = c || ''; }
+
+  // ---- رفع ملف (إنشاء أو تحديث)
+  async function putFile(repo, branch, path, buf, message) {
+    let sha;
+    const ex = await gh(`/repos/${repo}/contents/${path}?ref=${encodeURIComponent(branch)}`, { okStatus: [404] });
+    if (ex.status !== 404 && ex.data && ex.data.sha) sha = ex.data.sha;
+    await gh(`/repos/${repo}/contents/${path}`, { method: 'PUT', body: { message, content: b64(buf), branch, ...(sha ? { sha } : {}) } });
+  }
+
+  let busy = false;
+  async function run() {
+    if (busy) return;
+    const repo = $('#repo').value.trim().replace(/^https?:\/\/github\.com\//, '').replace(/\.git$/, '').replace(/\/$/, '');
+    const name = $('#name').value.trim(), appId = $('#appId').value.trim(), ver = $('#ver').value.trim() || '1.0';
+    const file = $('#file').files[0], zip = $('#zip').files[0], icon = $('#icon').files[0], token = $('#token').value.trim();
+    const code = $('#code').value, url = $('#url').value.trim(), scheme = $('#scheme').value.trim().toLowerCase();
+    const vcodeRaw = $('#vcode').value.trim();
+    showSteps();
+    const bad = m => { setMsg(m, 'bad'); };
+    if (!validRepo(repo)) return bad('اكتب المستودع بالشكل owner/repo.');
+    if (!token) return bad('الصق التوكن.');
+    if (source === 'html') { if (!file) return bad('اختار ملف HTML.'); if (file.size === 0) return bad('الملف فاضي.'); if (file.size > MAX_BYTES) return bad('الملف أكبر من 10 ميجا.'); }
+    if (source === 'editor' && !code.trim()) return bad('المحرر فاضي.');
+    if (source === 'zip') { if (!zip) return bad('اختار ملف ZIP.'); if (zip.size > MAX_ZIP) return bad('الـ ZIP أكبر من 25 ميجا.'); }
+    if (source === 'url') { let u; try { u = new URL(url); } catch (e) { return bad('الرابط غلط.'); } if (u.protocol !== 'https:') return bad('الرابط لازم يبدأ بـ https://'); }
+    if (!name) return bad('اكتب اسم التطبيق.');
+    if (!validId(appId)) return bad('معرّف الحزمة غلط. استخدم حروف إنجليزي صغيرة وأرقام ونقط، مثال com.example.myapp.');
+    const kw = appId.split('.').find(x => JAVA_KW.has(x)); if (kw) return bad('معرّف الحزمة فيه كلمة محجوزة: ' + kw);
+    if (!validVer(ver)) return bad('رقم الإصدار غلط.');
+    if (vcodeRaw && !(/^\d+$/.test(vcodeRaw) && +vcodeRaw >= 1 && +vcodeRaw <= 2100000000)) return bad('versionCode لازم يكون رقم صحيح موجب.');
+    if (scheme && (!/^[a-z][a-z0-9+.-]{1,30}$/.test(scheme) || BAD_SCHEMES.includes(scheme))) return bad('الرابط العميق غلط (حروف إنجليزي صغيرة، ومش http/https).');
+    const adsOn = $('#adsOn').checked, adsTest = $('#adsTest').checked, adMode = $('#adMode').value, adPos = $('#adPos').value, adEvery = Math.floor(+$('#adEvery').value);
+    const ads = { enabled: adsOn, testMode: adsTest, appId: $('#adApp').value.trim(), bannerId: $('#adBanner').value.trim(), bannerPosition: adPos, interstitialId: $('#adInter').value.trim(), interstitialMode: adMode, interstitialEvery: adMode === 'none' ? 3 : adEvery, rewardedId: $('#adRew').value.trim() };
+    if (adsOn) {
+      if (adMode === 'timer' && !(adEvery >= 30 && adEvery <= 3600)) return bad('الإعلان البيني بالمؤقت: من 30 إلى 3600 ثانية.');
+      if (adMode === 'pages' && !(adEvery >= 1 && adEvery <= 100)) return bad('الإعلان البيني بالصفحات: من 1 إلى 100.');
+      if (!adsTest) {
+        const U = /^ca-app-pub-\d{16}\/\d{10}$/;
+        if (!/^ca-app-pub-\d{16}~\d{10}$/.test(ads.appId)) return bad('AdMob App ID غلط.');
+        if (adPos !== 'none' && !U.test(ads.bannerId)) return bad('Banner ID غلط.');
+        if (adMode !== 'none' && !U.test(ads.interstitialId)) return bad('Interstitial ID غلط.');
+        if (ads.rewardedId && !U.test(ads.rewardedId)) return bad('Rewarded ID غلط.');
+      }
+    }
+    const outputs = { apk: $('#oApk').checked, aab: $('#oAab').checked, project: $('#oProj').checked };
+    if (!outputs.apk && !outputs.aab && !outputs.project) return bad('اختار مخرج واحد على الأقل.');
+    const cfg = {
+      appName: name, appId, versionName: ver, versionCode: vcodeRaw ? +vcodeRaw : 'auto', source: source === 'editor' ? 'html' : source, url: source === 'url' ? url : '',
+      orientation: $('#orient').value, fullscreen: $('#fullscreen').checked, keepScreenOn: $('#keepOn').checked, desktopMode: $('#desktop').checked,
+      allowMixedContent: $('#mixed').checked, backgroundColor: $('#bg').value, splashColor: $('#splashColor').value, splashSeconds: Math.min(Math.max(+$('#splashSec').value || 0, 0), 5),
+      cacheMode: $('#cache').value, bridge: $('#bridge').checked, downloads: $('#downloads').checked, pullToRefresh: $('#ptr').checked, ads,
+      deepLinkScheme: scheme, permissions: [...document.querySelectorAll('[data-perm]:checked')].map(x => x.dataset.perm), outputs
+    };
+    busy = true; $('#go').disabled = true;
+    saved.forEach(id => LS.set('h2a_' + id, $('#' + id).value.trim()));
+    LS.set('h2a_repo', repo);
+    if ($('#rememberTok').checked) LS.set('h2a_token', token); else LS.del('h2a_token');
+    let step = 0;
+    try {
+      st(0, 'run');
+      const info = (await gh(`/repos/${repo}`)).data;
+      if (info.permissions && info.permissions.push === false) throw Object.assign(new Error('التوكن ملوش صلاحية كتابة على المستودع.'), { status: 403 });
+      const branch = info.default_branch || 'main';
+      st(0, 'done'); step = 1; st(1, 'run');
+      if (source === 'html') await putFile(repo, branch, 'app/index.html', await readBuf(file), 'Update app HTML');
+      else if (source === 'editor') await putFile(repo, branch, 'app/index.html', new TextEncoder().encode(code).buffer, 'Update app HTML');
+      else if (source === 'zip') await putFile(repo, branch, 'app/app.zip', await readBuf(zip), 'Update app ZIP');
+      await putFile(repo, branch, 'app/config.json', new TextEncoder().encode(JSON.stringify(cfg, null, 2)).buffer, 'Update app config');
+      if (icon) await putFile(repo, branch, 'app/icon.png', await readBuf(await toIcon(icon)), 'Update app icon');
+      st(1, 'done'); step = 2; st(2, 'run');
+      const t0 = Date.now() - 15000;
+      await gh(`/repos/${repo}/actions/workflows/build.yml/dispatches`, { method: 'POST', body: { ref: branch } });
+      // ننتظر ظهور الـ run
+      let runInfo = null;
+      for (let i = 0; i < 30 && !runInfo; i++) {
+        await sleep(i === 0 ? 3000 : 4000);
+        const rs = (await gh(`/repos/${repo}/actions/workflows/build.yml/runs?event=workflow_dispatch&per_page=5`)).data;
+        runInfo = ((rs && rs.workflow_runs) || []).find(r => new Date(r.created_at).getTime() >= t0) || null;
+      }
+      if (!runInfo) throw new Error('البناء ما بدأش. افتح تبويب Actions في المستودع وتأكد إن Workflows متفعّلة.');
+      st(2, 'done'); step = 3; st(3, 'run');
+      $('#runLink').href = runInfo.html_url; $('#runLink').hidden = false;
+      // متابعة البناء
+      let fin = runInfo;
+      for (let i = 0; i < 270 && fin.status !== 'completed'; i++) {
+        await sleep(8000);
+        fin = (await gh(`/repos/${repo}/actions/runs/${runInfo.id}`)).data;
+      }
+      if (fin.status !== 'completed') throw new Error('البناء بياخد وقت طويل. تابعه من الرابط تحت.');
+      if (fin.conclusion !== 'success') throw new Error('البناء فشل. افتح الرابط تحت وشوف الخطوة الحمرا.');
+      st(3, 'done'); step = 4; st(4, 'run');
+      let rel = null;
+      for (let i = 0; i < 8 && !rel; i++) {
+        const r = await gh(`/repos/${repo}/releases/tags/build-${fin.run_number}`, { okStatus: [404] });
+        if (r.status !== 404 && r.data && (r.data.assets || []).length) rel = r.data; else await sleep(3000);
+      }
+      if (!rel) throw new Error('البناء نجح بس الإصدار لسه ما ظهرش. شوف تبويب Releases.');
+      st(4, 'done');
+      const label = n => /\.apk$/i.test(n) ? '⬇️ تنزيل الـ APK' : /\.aab$/i.test(n) ? '⬇️ تنزيل الـ AAB (لـ Google Play)' : /\.zip$/i.test(n) ? '⬇️ مشروع Android Studio (ZIP)' : '⬇️ ' + n;
+      const box = $('#dls'); box.innerHTML = '';
+      for (const as of rel.assets) { const a = document.createElement('a'); a.className = 'dl'; a.target = '_blank'; a.rel = 'noopener'; a.href = as.browser_download_url; a.textContent = label(as.name); box.appendChild(a); }
+      $('#dl').hidden = false;
+      const priv = info.private;
+      setMsg(priv ? 'جاهز. المستودع خاص، فسجّل دخول GitHub في المتصفح قبل ما تنزّل، أو نزّله من صفحة Releases.' : 'جاهز! نزّل الـ APK وثبّته (اسمح بالتثبيت من المتصفح لو سأل).', 'ok');
+      if (priv) { $('#runLink').href = rel.html_url; $('#runLink').textContent = 'صفحة الإصدار على GitHub'; }
+    } catch (e) {
+      st(step, 'fail'); setMsg(explain(e), 'bad');
+    } finally { busy = false; $('#go').disabled = false; }
+  }
+  $('#go').addEventListener('click', run);
+  
+})();
+</script>
+</body>
+</html>
