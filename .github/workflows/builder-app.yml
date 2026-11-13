@@ -1,0 +1,80 @@
+name: Build Builder App
+
+# بيبني تطبيق "محوّل HTML إلى APK" (APK واحد بتثبّته على الموبايل ويشتغل أوفلاين).
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.9
+
+      - name: Test core logic (plain JVM)
+        run: |
+          mkdir -p /tmp/core
+          javac -encoding UTF-8 -d /tmp/core native/builder/src/main/java/com/h2a/builder/core/*.java native/test/CoreTest.java
+          java -Dfile.encoding=UTF-8 -cp /tmp/core CoreTest
+
+      - name: Generate icons
+        run: |
+          python3 native/tools/make_icons.py native/shell/src/main/res '#334155'
+          python3 native/tools/make_icons.py native/builder/src/main/res '#6366f1'
+
+      - name: Build template (shell) APK
+        run: gradle -p native :shell:assembleRelease --no-daemon --stacktrace
+
+      - name: Embed template into builder
+        run: |
+          APK=$(ls native/shell/build/outputs/apk/release/*.apk | head -1)
+          echo "template: $APK"
+          cp "$APK" native/builder/src/main/assets/template.apk
+          unzip -l native/builder/src/main/assets/template.apk | grep -E "AndroidManifest|classes.dex|ic_launcher|resources.arsc"
+
+      - name: Build builder APK
+        run: gradle -p native :builder:assembleRelease --no-daemon --stacktrace
+
+      - name: Sign
+        env:
+          KS_B64: ${{ secrets.KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          if [ -n "${KS_B64:-}" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          else
+            echo "::warning::مفيش KEYSTORE secrets، بيتوقّع بمفتاح مؤقت."
+            KS_PASS=temp-pass-123456; KEY_ALIAS=temp; KEY_PASS=$KS_PASS
+            keytool -genkeypair -keystore "$RUNNER_TEMP/release.jks" -alias temp -keyalg RSA -keysize 2048 -validity 10000 -storepass "$KS_PASS" -keypass "$KEY_PASS" -dname "CN=temp"
+          fi
+          export KS_PASS KEY_PASS
+          mkdir -p out
+          "$BT/zipalign" -p -f 4 native/builder/build/outputs/apk/release/builder-release-unsigned.apk "$RUNNER_TEMP/aligned.apk"
+          "$BT/apksigner" sign --ks "$RUNNER_TEMP/release.jks" --ks-pass env:KS_PASS --ks-key-alias "$KEY_ALIAS" --key-pass env:KEY_PASS \
+            --out out/H2A-Builder.apk "$RUNNER_TEMP/aligned.apk"
+          "$BT/apksigner" verify --print-certs out/H2A-Builder.apk | head -3
+          ls -la out
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: builder-${{ github.run_number }}
+          name: H2A Builder (build ${{ github.run_number }})
+          body: "تطبيق محوّل HTML إلى APK. نزّل H2A-Builder.apk وثبّته."
+          files: out/H2A-Builder.apk
