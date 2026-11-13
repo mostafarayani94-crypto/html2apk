@@ -27,7 +27,8 @@ def png(size, bg, fg):
         rows.append(bytes(row))
     raw = b''.join(rows)
     def chunk(t, d): return struct.pack('>I', len(d)) + t + d + struct.pack('>I', zlib.crc32(t + d) & 0xffffffff)
-    return b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', size, size, 8, 6, 0, 0, 0)) + chunk(b'IDAT', zlib.compress(raw, 9)) + chunk(b'IEND', b'')
+    # علامة h2a-icon جوه الصورة: التطبيق الباني بيعرف الأيقونة منها حتى لو AGP غيّر مسارات الملفات
+    return b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', size, size, 8, 6, 0, 0, 0)) + chunk(b'tEXt', b'h2a\x00h2a-icon-marker') + chunk(b'IDAT', zlib.compress(raw, 9)) + chunk(b'IEND', b'')
 
 res, hexcol = sys.argv[1], sys.argv[2].lstrip('#')
 bg = tuple(int(hexcol[i:i + 2], 16) for i in (0, 2, 4))
