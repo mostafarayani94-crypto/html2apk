@@ -3,162 +3,472 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
 <title>محوّل HTML إلى APK</title>
 <style>
-:root{--bg:#020617;--card:#0f172a;--line:#1e293b;--tx:#e2e8f0;--mut:#94a3b8;--pri:#6366f1;--ok:#34d399;--bad:#f87171}
-*{box-sizing:border-box}[hidden]{display:none!important}
-body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.6 system-ui,Tahoma,sans-serif;padding:16px;padding-bottom:48px}
-main{max-width:560px;margin:0 auto;display:grid;gap:14px}
-h1{margin:6px 0 0;font-size:22px}.sub{margin:0;color:var(--mut);font-size:14px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;display:grid;gap:10px}
-.card h2{margin:0;font-size:16px}
-label{font-size:13px;color:var(--mut);display:grid;gap:4px}
-input,textarea,select{width:100%;background:var(--bg);color:var(--tx);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit;min-height:44px}
-input[type=checkbox]{width:auto;min-height:0}input[type=color]{padding:2px;height:44px}
-textarea{direction:ltr;text-align:left;min-height:160px;font:13px/1.5 monospace}
-button{font:inherit;border:0;border-radius:12px;padding:12px 16px;min-height:46px;cursor:pointer;background:var(--pri);color:#fff;font-weight:600}
-button.ghost{background:transparent;border:1px solid var(--line);color:var(--tx)}
-button:disabled{opacity:.5}
-.seg{display:flex;gap:6px;flex-wrap:wrap}.seg button{background:transparent;border:1px solid var(--line);color:var(--tx);padding:8px 12px;min-height:40px;font-weight:500}.seg button.on{background:var(--pri);border-color:var(--pri)}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.opts{display:grid;gap:8px}
-.chk{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--tx)}
-.hint{font-size:12.5px;color:var(--mut);margin:0}.file{font-size:13px;color:var(--ok);word-break:break-all}
-#msg{font-size:14px;min-height:20px}.bad{color:var(--bad)}.ok{color:var(--ok)}
-code{direction:ltr;unicode-bidi:embed;background:var(--bg);padding:1px 6px;border-radius:6px;font-size:13px}
-.big{padding:16px;font-size:17px}
+:root{--bg:#f4f6fb;--card:#fff;--line:#e3e7f0;--tx:#0f172a;--mut:#64748b;--pri:#0284c7;--pri2:#2563eb;--ok:#059669;--bad:#dc2626;--soft:#e6f3fb;--shadow:0 1px 2px rgba(15,23,42,.06),0 8px 24px rgba(2,132,199,.08)}
+@media (prefers-color-scheme:dark){:root{--bg:#0b1220;--card:#131c2f;--line:#223049;--tx:#e8edf7;--mut:#8c9ab8;--pri:#38bdf8;--pri2:#60a5fa;--ok:#34d399;--bad:#f87171;--soft:#17263f;--shadow:0 1px 2px rgba(0,0,0,.3)}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}[hidden]{display:none!important}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.65 "Segoe UI",Tahoma,system-ui,sans-serif;padding-bottom:calc(130px + env(safe-area-inset-bottom))}
+.top{display:flex;align-items:center;gap:8px;padding:calc(18px + env(safe-area-inset-top)) 16px 6px}
+.top h1{margin:0;font-size:26px;flex:1}
+.iconbtn{background:transparent;color:var(--tx);border-radius:50%;width:44px;height:44px;min-height:0;padding:0;font-size:22px;display:grid;place-items:center}
+main{max-width:600px;margin:0 auto;padding:6px 14px;display:grid;gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;display:grid;gap:12px;box-shadow:var(--shadow)}
+.card h2{margin:0;font-size:16px;display:flex;align-items:center;gap:10px}
+.num{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--soft);color:var(--pri);font-size:13px;font-weight:700}
+label.f{display:grid;gap:5px;font-size:13px;color:var(--mut)}
+input[type=text],input:not([type]),input[type=url],textarea,select{width:100%;background:var(--bg);color:var(--tx);border:1.5px solid var(--line);border-radius:12px;padding:11px 13px;font:inherit;min-height:46px;outline:0}
+input:focus,textarea:focus,select:focus{border-color:var(--pri)}
+textarea{direction:ltr;text-align:left;min-height:200px;font:13px/1.5 ui-monospace,monospace;white-space:pre}
+input[type=color]{width:100%;height:46px;padding:3px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg)}
+button{font:inherit;border:0;border-radius:16px;padding:12px 16px;min-height:48px;cursor:pointer;background:var(--pri);color:#fff;font-weight:700}
+button:active{transform:scale(.98)}button:disabled{opacity:.55}
+button.ghost{background:var(--soft);color:var(--pri)}
+button.line{background:transparent;border:1.5px solid var(--line);color:var(--tx);font-weight:600}
+button.danger{background:transparent;border:1.5px solid var(--bad);color:var(--bad)}
+.newbtn{width:100%;min-height:58px;font-size:18px;border-radius:30px;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 8px 20px rgba(2,132,199,.3)}
+.proj{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:24px;padding:12px;box-shadow:var(--shadow);border-inline-start:6px solid var(--pri2);cursor:pointer}
+.proj img{width:68px;height:68px;border-radius:16px;flex:none;background:var(--soft);object-fit:cover}
+.proj .info{flex:1;min-width:0}
+.proj .nm{font-weight:800;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.proj .meta{color:var(--mut);font-size:14px;line-height:1.5}
+.proj .act{display:flex;gap:2px}
+.proj .act button{background:transparent;color:var(--pri);width:42px;height:42px;min-height:0;padding:0;font-size:20px;border-radius:50%}
+.empty{text-align:center;color:var(--mut);padding:36px 12px;display:grid;gap:8px}.empty .big{font-size:54px}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:var(--bg);padding:5px;border-radius:14px}
+.seg button{background:transparent;color:var(--mut);padding:9px 4px;min-height:42px;font-size:14px;font-weight:600;border-radius:10px}
+.seg button.on{background:var(--card);color:var(--pri);box-shadow:0 1px 4px rgba(15,23,42,.12)}
+.fname{font-size:13.5px;color:var(--ok);word-break:break-all;min-height:20px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.iconrow{display:flex;align-items:center;gap:14px}
+.iconprev{width:76px;height:76px;border-radius:20px;background:var(--bg);border:1.5px solid var(--line);display:grid;place-items:center;font-size:26px;overflow:hidden;flex:none}
+.iconprev img{width:100%;height:100%;object-fit:cover}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 2px;border-top:1px solid var(--line);font-size:14.5px}
+.sw:first-of-type{border-top:0}
+.sw small{display:block;color:var(--mut);font-size:12px;line-height:1.4}
+.sw input{appearance:none;-webkit-appearance:none;width:46px;height:28px;min-height:0;border-radius:99px;background:var(--line);position:relative;flex:none;border:0;transition:.15s;outline:0}
+.sw input::after{content:"";position:absolute;top:3px;inset-inline-start:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.15s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.sw input:checked{background:var(--pri)}.sw input:checked::after{inset-inline-start:21px}
+details summary{cursor:pointer;font-weight:700;list-style:none;display:flex;justify-content:space-between;align-items:center;min-height:36px}
+details summary::after{content:"▾";color:var(--mut)}details[open] summary::after{content:"▴"}
+details>div{display:grid;gap:10px;margin-top:8px}
+.hint{font-size:12.5px;color:var(--mut);margin:0}
+code{direction:ltr;unicode-bidi:embed;background:var(--bg);padding:1px 7px;border-radius:6px;font-size:12.5px}
+.bar{position:fixed;inset-inline:0;bottom:0;padding:12px 14px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(to top,var(--bg) 70%,transparent);z-index:5}
+.bar .in{max-width:600px;margin:0 auto;display:grid;grid-template-columns:1fr 2fr;gap:10px}
+.bar button.main{font-size:18px;min-height:54px;background:linear-gradient(135deg,var(--pri),var(--pri2));box-shadow:0 8px 20px rgba(2,132,199,.35)}
+.nav{position:fixed;bottom:calc(14px + env(safe-area-inset-bottom));inset-inline:16px;max-width:520px;margin:0 auto;background:var(--card);border-radius:34px;box-shadow:0 10px 30px rgba(0,0,0,.18);display:grid;grid-template-columns:1fr 1fr;padding:8px;z-index:5;border:1px solid var(--line)}
+.nav button{background:transparent;color:var(--mut);display:grid;gap:0;justify-items:center;min-height:58px;border-radius:26px;font-size:13px;font-weight:600;padding:6px}
+.nav button span{font-size:22px;line-height:1.2}.nav button.on{background:var(--soft);color:var(--pri)}
+.result{border-color:var(--pri)}
+.prog{height:6px;border-radius:9px;background:var(--bg);overflow:hidden}.prog i{display:block;height:100%;width:30%;background:linear-gradient(90deg,var(--pri),var(--pri2));animation:mv 1.1s infinite ease-in-out;border-radius:9px}
+@keyframes mv{0%{margin-inline-start:-30%}100%{margin-inline-start:100%}}
+#msg{font-size:15px;min-height:22px}.ok{color:var(--ok)}.bad{color:var(--bad)}
+.diag{background:var(--bg);border-radius:12px;padding:10px;font:12px/1.5 ui-monospace,monospace;direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-all;max-height:220px;overflow:auto;color:var(--mut)}
+.toast{position:fixed;inset-inline:16px;top:calc(12px + env(safe-area-inset-top));background:var(--bad);color:#fff;padding:12px 14px;border-radius:14px;z-index:30;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.shade{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:20;display:flex;align-items:flex-end}
+.sheet{background:var(--card);width:100%;max-width:600px;margin:0 auto;border-radius:26px 26px 0 0;padding:14px 14px calc(18px + env(safe-area-inset-bottom));display:grid;gap:8px}
+.sheet h3{margin:4px 4px 2px;font-size:16px}
+.sheet button{background:transparent;color:var(--tx);text-align:start;font-weight:600;border-radius:14px;display:flex;gap:12px;align-items:center}
+.sheet button:active{background:var(--soft)}.sheet button.d{color:var(--bad)}
+.tpl{display:flex;gap:14px;align-items:center;cursor:pointer}
+.tpl .e{font-size:34px;width:64px;height:64px;border-radius:18px;background:var(--soft);display:grid;place-items:center;flex:none}
+.tpl b{display:block;font-size:17px}.tpl span{color:var(--mut);font-size:13.5px}
 </style>
 </head>
 <body>
-<main>
-  <div><h1>📦 محوّل HTML إلى APK</h1><p class="sub">اختار ملف HTML واكتب الاسم، والتطبيق يتبني ويتثبّت على الموبايل. من غير إنترنت ولا علامة مائية.</p></div>
+<div class="toast" id="toast" hidden></div>
 
-  <section class="card">
-    <h2>1) مصدر التطبيق</h2>
-    <div class="seg" id="srcSeg">
-      <button data-s="html" class="on">ملف HTML</button><button data-s="zip">ZIP</button><button data-s="editor">محرر</button><button data-s="url">رابط موقع</button>
-    </div>
-    <div data-pane="html"><button class="ghost" id="pickHtml">اختيار ملف HTML</button><p class="file" id="htmlName"></p></div>
-    <div data-pane="zip" hidden><button class="ghost" id="pickZip">اختيار ملف ZIP</button><p class="file" id="zipName"></p><p class="hint">لازم فيه <code>index.html</code>. الصور والخطوط وCSS وJS كلها بتتضمن.</p></div>
-    <div data-pane="editor" hidden><label>الصق كود HTML<textarea id="code" spellcheck="false"></textarea></label></div>
-    <div data-pane="url" hidden><label>الرابط (https)<input id="url" dir="ltr" placeholder="https://example.com" autocapitalize="off"></label><p class="hint">التطبيق هيفتح الموقع ومحتاج إنترنت. جسر الجهاز بيتقفل في الوضع ده لأمانك.</p></div>
-  </section>
+<!-- ========== الرئيسية: مشاريعي ========== -->
+<section id="vHome">
+  <div class="top"><h1>مشاريعي</h1><button class="iconbtn" id="menuBtn" type="button" aria-label="القائمة">⋮</button></div>
+  <main>
+    <button class="newbtn" id="newBtn" type="button">＋ إنشاء مشروع</button>
+    <div id="list"></div>
+  </main>
+</section>
 
-  <section class="card">
-    <h2>2) بيانات التطبيق</h2>
-    <label>اسم التطبيق<input id="name" maxlength="40" placeholder="حاسبتي"></label>
-    <p class="hint">معرّف الحزمة: <code id="pkg">—</code> (بيتحدد تلقائياً ويفضل ثابت للتطبيق عشان التحديثات)</p>
-    <div class="grid2">
-      <label>رقم الإصدار<input id="ver" dir="ltr" value="1.0"></label>
-      <label>الأيقونة (اختياري)<button class="ghost" id="pickIcon" type="button">اختيار صورة</button></label>
-    </div>
-    <p class="file" id="iconName"></p>
-  </section>
+<!-- ========== القوالب ========== -->
+<section id="vTpl" hidden>
+  <div class="top"><h1>القوالب</h1></div>
+  <main>
+    <p class="hint">اختار قالب جاهز يبدأ منه مشروعك، وتعدّل الكود زي ما تحب.</p>
+    <div id="tplList" style="display:grid;gap:12px"></div>
+  </main>
+</section>
 
-  <section class="card">
-    <h2>3) الشكل والسلوك</h2>
-    <div class="grid2">
-      <label>اتجاه الشاشة<select id="orient"><option value="auto">تلقائي</option><option value="portrait">رأسي</option><option value="landscape">أفقي</option></select></label>
-      <label>لون الخلفية<input id="bg" type="color" value="#ffffff"></label>
-    </div>
-    <div class="opts">
-      <label class="chk"><input type="checkbox" id="fullscreen"> ملء الشاشة</label>
-      <label class="chk"><input type="checkbox" id="keepOn"> إبقاء الشاشة شغالة</label>
-      <label class="chk"><input type="checkbox" id="desktop"> وضع سطح المكتب</label>
-      <label class="chk"><input type="checkbox" id="mixed"> السماح بمحتوى مختلط</label>
-      <label class="chk"><input type="checkbox" id="downloads" checked> مدير التنزيلات</label>
-      <label class="chk"><input type="checkbox" id="bridge" checked> جسر الجهاز <code>AndroidAPI</code> (اهتزاز، فلاش، مشاركة…)</label>
-    </div>
-    <label>الكاش<select id="cache"><option value="default">افتراضي</option><option value="noCache">من غير كاش</option><option value="cacheElseNetwork">الكاش أولاً</option></select></label>
-    <div class="opts"><span class="hint">الصلاحيات المطلوبة:</span>
-      <label class="chk"><input type="checkbox" data-perm="camera"> كاميرا</label>
-      <label class="chk"><input type="checkbox" data-perm="microphone"> ميكروفون</label>
-      <label class="chk"><input type="checkbox" data-perm="location"> الموقع GPS</label>
-    </div>
-  </section>
+<!-- ========== محرر المشروع ========== -->
+<section id="vEdit" hidden>
+  <div class="top"><button class="iconbtn" id="backBtn" type="button" aria-label="رجوع">➜</button><h1 id="editTitle">مشروع جديد</h1></div>
+  <main>
+    <section class="card">
+      <h2><span class="num">1</span> مصدر التطبيق</h2>
+      <div class="seg" id="srcSeg"><button data-s="html" class="on">كود HTML</button><button data-s="zip">موقع ZIP</button><button data-s="url">رابط</button></div>
+      <div data-pane="html">
+        <div class="row"><button class="ghost" id="pickHtml" type="button">📄 اختيار ملف</button><button class="line" id="clearCode" type="button">مسح الكود</button></div>
+        <div class="fname" id="htmlName"></div>
+        <label class="f">الكود (تقدر تعدّله هنا مباشرة)<textarea id="code" spellcheck="false" placeholder="&lt;!doctype html&gt;..."></textarea></label>
+      </div>
+      <div data-pane="zip" hidden>
+        <button class="ghost" id="pickZip" type="button">🗜️ اختيار ملف ZIP</button>
+        <div class="fname" id="zipName"></div>
+        <p class="hint">لازم فيه <code>index.html</code>. الصور والخطوط وCSS وJS كلها بتتضمن. في التحديث، لو ما اخترتش ملف جديد بيتستخدم القديم المحفوظ.</p>
+      </div>
+      <div data-pane="url" hidden>
+        <label class="f">رابط الموقع (https)<input id="url" dir="ltr" placeholder="https://example.com" autocapitalize="off" inputmode="url"></label>
+        <p class="hint">التطبيق هيفتح الموقع ويحتاج إنترنت. جسر الجهاز بيتقفل في الوضع ده لأمانك.</p>
+      </div>
+    </section>
 
-  <button class="big" id="go">ابنِ التطبيق</button>
+    <section class="card">
+      <h2><span class="num">2</span> بيانات التطبيق</h2>
+      <label class="f">اسم التطبيق<input id="name" maxlength="40" placeholder="مثلاً: حاسبتي"></label>
+      <div class="iconrow">
+        <div class="iconprev" id="iconPrev">🖼️</div>
+        <div style="display:grid;gap:6px;flex:1">
+          <button class="ghost" id="pickIcon" type="button">اختيار أيقونة</button>
+          <button class="line" id="clearIcon" type="button" hidden>إلغاء الأيقونة</button>
+          <div class="fname" id="iconName">من غير اختيار: أيقونة ملونة بأول حرف من الاسم</div>
+        </div>
+      </div>
+      <div class="row">
+        <label class="f">اسم الإصدار<input id="ver" dir="ltr" value="1.0"></label>
+        <label class="f">لون الخلفية<input id="bg" type="color" value="#ffffff"></label>
+      </div>
+      <p class="hint" id="pkgLine" hidden>معرّف الحزمة: <code id="pkg">—</code> · رقم البناء: <b id="vcode">0</b> (بيزيد لوحده مع كل تحديث)</p>
+    </section>
 
-  <section class="card" id="prog" hidden>
-    <h2>التقدّم</h2>
-    <div id="msg" role="status"></div>
-    <button id="install" hidden class="big">تثبيت التطبيق</button>
-    <button id="allow" hidden class="ghost">السماح بالتثبيت من هذا التطبيق (مرة واحدة)</button>
-    <button id="save" hidden class="ghost">حفظ الـ APK في التنزيلات</button>
-  </section>
+    <section class="card">
+      <h2><span class="num">3</span> الشكل والسلوك</h2>
+      <label class="f">اتجاه الشاشة<select id="orient"><option value="auto">تلقائي</option><option value="portrait">رأسي</option><option value="landscape">أفقي</option></select></label>
+      <div>
+        <label class="sw"><span>ملء الشاشة<small>إخفاء شريط الحالة وأزرار النظام</small></span><input type="checkbox" id="fullscreen"></label>
+        <label class="sw"><span>إبقاء الشاشة شغالة<small>مناسب للألعاب والعدّادات</small></span><input type="checkbox" id="keepOn"></label>
+        <label class="sw"><span>سحب للتحديث<small>اسحب من أول الصفحة لتحديثها</small></span><input type="checkbox" id="pull"></label>
+      </div>
+      <details>
+        <summary>إعدادات متقدمة</summary>
+        <div>
+          <div>
+            <label class="sw"><span>وضع سطح المكتب</span><input type="checkbox" id="desktop"></label>
+            <label class="sw"><span>السماح بمحتوى مختلط (http داخل https)</span><input type="checkbox" id="mixed"></label>
+            <label class="sw"><span>مدير التنزيلات<small>يحفظ الملفات اللي التطبيق بيحمّلها</small></span><input type="checkbox" id="downloads" checked></label>
+            <label class="sw"><span>جسر الجهاز <code>AndroidAPI</code><small>اهتزاز، فلاش، مشاركة، حفظ ملفات…</small></span><input type="checkbox" id="bridge" checked></label>
+          </div>
+          <label class="f">الكاش<select id="cache"><option value="default">افتراضي</option><option value="noCache">من غير كاش</option><option value="cacheElseNetwork">الكاش أولاً</option></select></label>
+          <div>
+            <label class="sw"><span>صلاحية الكاميرا</span><input type="checkbox" data-perm="camera"></label>
+            <label class="sw"><span>صلاحية الميكروفون</span><input type="checkbox" data-perm="microphone"></label>
+            <label class="sw"><span>صلاحية الموقع GPS</span><input type="checkbox" data-perm="location"></label>
+          </div>
+        </div>
+      </details>
+    </section>
 
-  <section class="card">
-    <h2>نسخة احتياطية للمفتاح</h2>
-    <p class="hint">كل تطبيقاتك بتتوقّع بنفس المفتاح، وده اللي بيخلّي التحديث يتثبّت فوق القديم. لو مسحت هذا التطبيق من غير نسخة، مش هتقدر تحدّث التطبيقات اللي بنيتها. احفظ النسخة في مكان آمن ولا تشاركها.</p>
-    <div class="grid2"><button class="ghost" id="expKey">حفظ نسخة</button><button class="ghost" id="impKey">استيراد نسخة</button></div>
-  </section>
-</main>
+    <section class="card result" id="prog" hidden>
+      <h2>⚙️ التقدّم</h2>
+      <div class="prog" id="spin" hidden><i></i></div>
+      <div id="msg" role="status"></div>
+      <button id="install" hidden type="button">⬇️ تثبيت التطبيق</button>
+      <button id="allow" hidden class="ghost" type="button">السماح بالتثبيت من هذا التطبيق (مرة واحدة)</button>
+      <button id="save" hidden class="line" type="button">حفظ الـ APK في التنزيلات</button>
+    </section>
+  </main>
+  <div class="bar"><div class="in"><button class="line" id="saveOnly" type="button">حفظ</button><button class="main" id="go" type="button">ابنِ التطبيق</button></div></div>
+</section>
+
+<nav class="nav" id="nav"><button id="navHome" class="on" type="button"><span>🏠</span>المشاريع</button><button id="navTpl" type="button"><span>🧩</span>القوالب</button></nav>
+
+<div class="shade" id="shade" hidden><div class="sheet" id="sheet"></div></div>
+
 <script>
 (function () {
   'use strict';
   var $ = function (s) { return document.querySelector(s); };
-  var N = window.Native, source = 'html', picked = { html: null, zip: null, icon: null };
-  var saved = {};
-  try { saved = JSON.parse(localStorage.getItem('h2a_ui') || '{}') || {}; } catch (e) {}
-  if (saved.name) { $('#name').value = saved.name; }
-  function pkg() { var n = $('#name').value.trim(); $('#pkg').textContent = n ? N.appIdFor(n) : '—'; }
-  $('#name').addEventListener('input', pkg); pkg();
+  var logLines = [];
+  function log(t) { logLines.push(new Date().toTimeString().slice(0, 8) + ' ' + t); if (logLines.length > 60) logLines.shift(); }
+  var toastTimer;
+  function toast(t) { var e = $('#toast'); e.textContent = t; e.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(function () { e.hidden = true; }, 6000); }
+  window.onerror = function (m, u, l) { log('JS error: ' + m + ' @' + l); toast('خطأ في الواجهة: ' + m); };
 
+  var N = window.Native;
+  if (!N) { toast('الجسر مش شغال: افتح التطبيق الأصلي مش المتصفح'); N = { pick: function () {}, listProjects: function () { return '[]'; }, getProject: function () { return '{}'; }, saveProject: function () { return '{"ok":false,"msg":"no native"}'; }, buildProject: function () {}, canInstall: function () { return true; }, allowInstall: function () {}, install: function () {}, saveApk: function () {}, exportKey: function () {}, duplicateProject: function () { return '{}'; }, deleteProject: function () { return false; }, applyKey: function () {}, info: function () { return 'no native'; }, lastCrash: function () { return ''; } }; }
+  try { log('جهاز: ' + N.info()); var cr = N.lastCrash(); if (cr) { log('آخر تعطّل:\n' + cr); toast('التطبيق اتقفل المرة اللي فاتت. التفاصيل في قائمة ⋮ ثم "معلومات تشخيص".'); } } catch (e) { log('info: ' + e); }
+
+  /* ---------- حالة ---------- */
+  var view = 'home', source = 'html';
+  var cur = null;   // المشروع المفتوح: {id, newZip, newIcon, clearIcon, hasIcon, hasZip, pkg, vcode}
+  function fresh() { return { id: '', newZip: false, newIcon: false, clearIcon: false, hasIcon: false, hasZip: false, pkg: '', vcode: 0 }; }
+
+  /* ---------- تنقل ---------- */
+  function show(v) {
+    view = v;
+    $('#vHome').hidden = v !== 'home'; $('#vTpl').hidden = v !== 'tpl'; $('#vEdit').hidden = v !== 'edit';
+    $('#nav').hidden = v === 'edit';
+    $('#navHome').classList.toggle('on', v === 'home'); $('#navTpl').classList.toggle('on', v === 'tpl');
+    window.scrollTo(0, 0);
+    if (v === 'home') renderList();
+  }
+  function fmtDate(ms) { if (!ms) return ''; var d = new Date(ms); function p(n) { return n < 10 ? '0' + n : '' + n; } return p(d.getDate()) + '.' + p(d.getMonth() + 1) + '.' + d.getFullYear(); }
+
+  /* ---------- القائمة ---------- */
+  function projects() { try { return JSON.parse(N.listProjects()); } catch (e) { log('list: ' + e); return []; } }
+  function renderList() {
+    var box = $('#list'); box.textContent = '';
+    var items = projects();
+    if (!items.length) {
+      var e = document.createElement('div'); e.className = 'empty';
+      e.innerHTML = '<div class="big">📦</div><b>لسه مفيش مشاريع</b><span>اضغط "إنشاء مشروع" أو اختار قالب جاهز من تحت.</span>';
+      box.appendChild(e); return;
+    }
+    box.style.display = 'grid'; box.style.gap = '12px';
+    items.forEach(function (p) {
+      var el = document.createElement('div'); el.className = 'proj';
+      var img = document.createElement('img'); img.alt = ''; if (p.thumb) img.src = p.thumb;
+      var info = document.createElement('div'); info.className = 'info';
+      var nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = p.name;
+      var meta = document.createElement('div'); meta.className = 'meta';
+      meta.textContent = (p.built ? fmtDate(p.built) : 'لم يُبنَ بعد') + (p.versionCode ? '  ·  (' + p.versionCode + ') ' + p.versionName : '  ·  ' + p.versionName);
+      info.appendChild(nm); info.appendChild(meta);
+      var act = document.createElement('div'); act.className = 'act';
+      var up = document.createElement('button'); up.type = 'button'; up.textContent = '🔄'; up.title = 'تحديث وبناء'; up.setAttribute('aria-label', 'تحديث وبناء');
+      var more = document.createElement('button'); more.type = 'button'; more.textContent = '⋮'; more.setAttribute('aria-label', 'خيارات');
+      act.appendChild(up); act.appendChild(more);
+      el.appendChild(img); el.appendChild(info); el.appendChild(act);
+      el.addEventListener('click', function () { openProject(p.id, false); });
+      up.addEventListener('click', function (ev) { ev.stopPropagation(); openProject(p.id, true); });
+      more.addEventListener('click', function (ev) { ev.stopPropagation(); projectMenu(p); });
+      box.appendChild(el);
+    });
+  }
+
+  /* ---------- قوائم منبثقة ---------- */
+  function sheet(title, entries) {
+    var s = $('#sheet'); s.textContent = '';
+    var h = document.createElement('h3'); h.textContent = title; s.appendChild(h);
+    entries.forEach(function (en) {
+      var b = document.createElement('button'); b.type = 'button'; if (en.cls) b.className = en.cls;
+      b.textContent = en.label; b.addEventListener('click', function () { closeSheet(); en.fn(); }); s.appendChild(b);
+    });
+    $('#shade').hidden = false;
+  }
+  function closeSheet() { $('#shade').hidden = true; }
+  $('#shade').addEventListener('click', function (e) { if (e.target === this) closeSheet(); });
+
+  function projectMenu(p) {
+    sheet(p.name, [
+      { label: '🔄  تحديث وبناء نسخة جديدة', fn: function () { openProject(p.id, true); } },
+      { label: '✏️  تعديل المشروع', fn: function () { openProject(p.id, false); } },
+      { label: '⬇️  تثبيت آخر نسخة', fn: function () { if (!p.hasApk) return toast('ابنِ المشروع الأول.'); doInstall(p.id); } },
+      { label: '💾  حفظ الـ APK في التنزيلات', fn: function () { if (!p.hasApk) return toast('ابنِ المشروع الأول.'); N.saveApk(p.id, p.name); } },
+      { label: '📄  تكرار المشروع', fn: function () { try { var r = JSON.parse(N.duplicateProject(p.id)); if (!r.ok) toast(r.msg || 'فشل التكرار'); } catch (e) { toast('' + e); } renderList(); } },
+      { label: '🗑️  حذف المشروع', cls: 'd', fn: function () { confirmDelete(p); } }
+    ]);
+  }
+  function confirmDelete(p) {
+    sheet('حذف "' + p.name + '"؟', [
+      { label: 'نعم، احذف المشروع (التطبيق المثبّت على الموبايل مش هيتمسح)', cls: 'd', fn: function () { N.deleteProject(p.id); renderList(); } },
+      { label: 'إلغاء', fn: function () {} }
+    ]);
+  }
+  $('#menuBtn').addEventListener('click', function () {
+    sheet('القائمة', [
+      { label: '🔑  حفظ نسخة احتياطية من مفتاح التوقيع', fn: function () { N.exportKey(); } },
+      { label: '📥  استيراد نسخة المفتاح', fn: function () { pick('key'); } },
+      { label: '🛠️  معلومات تشخيص', fn: showDiag }
+    ]);
+  });
+  function showDiag() {
+    sheet('معلومات تشخيص', []);
+    var d = document.createElement('div'); d.className = 'diag'; d.textContent = logLines.join('\n') || '—'; $('#sheet').appendChild(d);
+    var c = document.createElement('button'); c.type = 'button'; c.textContent = 'إغلاق'; c.addEventListener('click', closeSheet); $('#sheet').appendChild(c);
+  }
+
+  /* ---------- القوالب ---------- */
+  var TPL = [
+    { e: '📄', n: 'صفحة فاضية', d: 'نقطة بداية بسيطة بتدعم العربي', name: 'تطبيقي', code: '<!doctype html>\n<html lang="ar" dir="rtl">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width,initial-scale=1">\n<title>تطبيقي</title>\n<style>\nbody{margin:0;min-height:100vh;display:grid;place-items:center;font-family:system-ui,Tahoma,sans-serif;background:#f1f5f9;color:#0f172a;text-align:center}\nh1{font-size:32px}\n</style>\n</head>\n<body>\n<div><h1>مرحباً 👋</h1><p>ده تطبيقي الأول.</p></div>\n</body>\n</html>\n' },
+    { e: '🎮', n: 'لعبة نقر', d: 'اضغط بأسرع ما تقدر وسجّل رقمك القياسي', name: 'لعبة النقر', code: '<!doctype html>\n<html lang="ar" dir="rtl">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">\n<title>لعبة النقر</title>\n<style>\nbody{margin:0;height:100vh;display:grid;place-items:center;background:#0f172a;color:#fff;font-family:system-ui,Tahoma,sans-serif;text-align:center;-webkit-user-select:none;user-select:none}\n#b{width:200px;height:200px;border-radius:50%;border:0;background:linear-gradient(135deg,#6366f1,#ec4899);color:#fff;font-size:28px;font-weight:700}\n#b:active{transform:scale(.94)}\n.s{font-size:22px;margin:14px}\n</style>\n</head>\n<body>\n<div><div class="s">النقاط: <b id="n">0</b> · الأعلى: <b id="h">0</b></div><button id="b">اضغط!</button><div class="s" id="t">10</div></div>\n<script>\nvar n=0,t=10,run=false,h=+(localStorage.h||0),iv;\nfunction $(i){return document.getElementById(i)}\n$("h").textContent=h;\n$("b").onclick=function(){\n  if(!run){run=true;n=0;t=10;iv=setInterval(function(){t--;$("t").textContent=t;if(t<=0){clearInterval(iv);run=false;if(n>h){h=n;localStorage.h=h;$("h").textContent=h}\n    if(window.AndroidAPI)AndroidAPI.vibrate(300);$("t").textContent="انتهى! اضغط للعب تاني"}},1000)}\n  n++;$("n").textContent=n;\n};\n<\/script>\n</body>\n</html>\n' },
+    { e: '📱', n: 'أدوات الجهاز', d: 'اهتزاز، مشاركة، بطارية، معلومات الجهاز', name: 'أدوات الجهاز', code: '<!doctype html>\n<html lang="ar" dir="rtl">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width,initial-scale=1">\n<title>أدوات الجهاز</title>\n<style>\nbody{margin:0;padding:20px;font-family:system-ui,Tahoma,sans-serif;background:#f8fafc;color:#0f172a}\nbutton{display:block;width:100%;margin:10px 0;padding:16px;border:0;border-radius:14px;background:#2563eb;color:#fff;font-size:17px}\npre{background:#e2e8f0;padding:12px;border-radius:12px;white-space:pre-wrap}\n</style>\n</head>\n<body>\n<h2>أدوات الجهاز</h2>\n<button onclick="AndroidAPI.vibrate(200)">اهتزاز</button>\n<button onclick="AndroidAPI.toast(\'أهلاً من التطبيق!\')">رسالة قصيرة</button>\n<button onclick="AndroidAPI.share(\'جرّب تطبيقي\')">مشاركة نص</button>\n<button onclick="AndroidAPI.copy(\'تم النسخ\');AndroidAPI.toast(\'اتنسخ\')">نسخ نص</button>\n<button onclick="document.getElementById(\'o\').textContent=\'البطارية: \'+AndroidAPI.batteryLevel()+\'%\\n\'+AndroidAPI.deviceInfo()">بطارية ومعلومات الجهاز</button>\n<pre id="o">—</pre>\n<script>if(!window.AndroidAPI){document.body.insertAdjacentHTML("afterbegin","<p>الجسر AndroidAPI مش متاح (فعّله من الإعدادات المتقدمة).</p>")}<\/script>\n</body>\n</html>\n' },
+    { e: '📝', n: 'مفكرة', d: 'بتحفظ ملاحظاتك على الجهاز', name: 'مفكرتي', code: '<!doctype html>\n<html lang="ar" dir="rtl">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width,initial-scale=1">\n<title>مفكرتي</title>\n<style>\nbody{margin:0;padding:16px;font-family:system-ui,Tahoma,sans-serif;background:#fffbeb;color:#1c1917}\ntextarea{width:100%;height:60vh;border:0;border-radius:14px;padding:14px;font:inherit;font-size:18px;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.08)}\nh2{margin:0 0 10px}small{color:#78716c}\n</style>\n</head>\n<body>\n<h2>📝 مفكرتي</h2>\n<textarea id="t" placeholder="اكتب هنا…"></textarea>\n<small id="s">بتتحفظ تلقائياً</small>\n<script>\nvar t=document.getElementById("t");t.value=localStorage.note||"";\nt.oninput=function(){localStorage.note=t.value;document.getElementById("s").textContent="اتحفظ ✓"};\n<\/script>\n</body>\n</html>\n' }
+  ];
+  function renderTpl() {
+    var box = $('#tplList');
+    TPL.forEach(function (t) {
+      var c = document.createElement('div'); c.className = 'card tpl';
+      c.innerHTML = '<div class="e"></div><div><b></b><span></span></div>';
+      c.querySelector('.e').textContent = t.e; c.querySelector('b').textContent = t.n; c.querySelector('span').textContent = t.d;
+      c.addEventListener('click', function () { newProject(t); });
+      box.appendChild(c);
+    });
+  }
+  renderTpl();
+
+  /* ---------- المحرر ---------- */
   function setSource(v) {
     source = v;
     document.querySelectorAll('#srcSeg button').forEach(function (b) { b.classList.toggle('on', b.dataset.s === v); });
     document.querySelectorAll('[data-pane]').forEach(function (d) { d.hidden = d.dataset.pane !== v; });
   }
   document.querySelectorAll('#srcSeg button').forEach(function (b) { b.addEventListener('click', function () { setSource(b.dataset.s); }); });
-  $('#pickHtml').addEventListener('click', function () { N.pick('html'); });
-  $('#pickZip').addEventListener('click', function () { N.pick('zip'); });
-  $('#pickIcon').addEventListener('click', function () { N.pick('icon'); });
-  $('#expKey').addEventListener('click', function () { N.exportKey(); });
-  $('#impKey').addEventListener('click', function () { N.importKey(); });
+
+  function resetIconUi(thumb) {
+    var p = $('#iconPrev'); p.textContent = '';
+    if (thumb) { var im = document.createElement('img'); im.src = thumb; im.alt = ''; p.appendChild(im); } else p.textContent = '🖼️';
+  }
+  function setBool(id, v) { $(id).checked = !!v; }
+
+  function fillForm(m, code) {
+    setSource(m.source || 'html');
+    $('#code').value = code || ''; $('#url').value = m.url || ''; $('#name').value = m.name || ''; $('#ver').value = m.versionName || '1.0';
+    var s = m.settings || {};
+    $('#orient').value = s.orientation || 'auto'; $('#bg').value = s.backgroundColor || '#ffffff'; $('#cache').value = s.cacheMode || 'default';
+    setBool('#fullscreen', s.fullscreen); setBool('#keepOn', s.keepScreenOn); setBool('#pull', s.pullToRefresh); setBool('#desktop', s.desktopMode); setBool('#mixed', s.allowMixedContent);
+    setBool('#downloads', s.downloads !== false); setBool('#bridge', s.bridge !== false);
+    var perms = s.permissions || [];
+    document.querySelectorAll('[data-perm]').forEach(function (x) { x.checked = perms.indexOf(x.dataset.perm) >= 0; });
+    $('#htmlName').textContent = ''; $('#zipName').textContent = m.hasZip ? '✓ ملف ZIP محفوظ من قبل' : '';
+    $('#iconName').textContent = m.hasIcon ? '✓ أيقونة محفوظة' : 'من غير اختيار: أيقونة ملونة بأول حرف من الاسم';
+    $('#clearIcon').hidden = !m.hasIcon;
+    resetIconUi(m.hasIcon ? m.thumb : '');
+    $('#prog').hidden = true; ['install', 'allow', 'save'].forEach(function (i) { $('#' + i).hidden = true; });
+    var edit = !!cur.id;
+    $('#pkgLine').hidden = !edit; $('#pkg').textContent = m.pkg || '—'; $('#vcode').textContent = m.versionCode || 0;
+    $('#editTitle').textContent = edit ? (m.name || 'مشروع') : 'مشروع جديد';
+    $('#go').textContent = edit ? '🔄 حدّث التطبيق' : 'ابنِ التطبيق';
+    $('#go').disabled = false;
+  }
+
+  function newProject(tpl) {
+    cur = fresh();
+    fillForm({ source: 'html', name: tpl ? tpl.name : '', versionName: '1.0', settings: {} }, tpl ? tpl.code : '');
+    show('edit');
+  }
+  function openProject(id, auto) {
+    var m;
+    try { m = JSON.parse(N.getProject(id)); } catch (e) { return toast('تعذّر فتح المشروع: ' + e); }
+    if (m.error) return toast('تعذّر فتح المشروع: ' + m.error);
+    cur = fresh(); cur.id = id; cur.hasIcon = !!m.hasIcon; cur.hasZip = !!m.hasZip; cur.pkg = m.pkg; cur.vcode = m.versionCode || 0;
+    fillForm(m, m.code || '');
+    cur.hasApk = !!m.hasApk;
+    show('edit');
+    if (auto) startBuild();
+  }
+  $('#newBtn').addEventListener('click', function () { newProject(null); });
+  $('#navHome').addEventListener('click', function () { show('home'); });
+  $('#navTpl').addEventListener('click', function () { show('tpl'); });
+  $('#backBtn').addEventListener('click', function () { show('home'); });
+
+  window.h2aBack = function () {
+    if (!$('#shade').hidden) { closeSheet(); return true; }
+    if (view === 'edit') { show('home'); return true; }
+    if (view === 'tpl') { show('home'); return true; }
+    return false;
+  };
+
+  /* ---------- اختيار الملفات ---------- */
+  function pick(kind) { log('اختيار: ' + kind); try { N.pick(kind); } catch (e) { toast('تعذّر فتح الاختيار: ' + e); log('pick err ' + e); } }
+  $('#pickHtml').addEventListener('click', function () { pick('html'); });
+  $('#pickZip').addEventListener('click', function () { pick('zip'); });
+  $('#pickIcon').addEventListener('click', function () { pick('icon'); });
+  $('#clearCode').addEventListener('click', function () { $('#code').value = ''; $('#htmlName').textContent = ''; });
+  $('#clearIcon').addEventListener('click', function () { cur.newIcon = false; cur.clearIcon = true; resetIconUi(''); $('#iconName').textContent = 'من غير اختيار: أيقونة ملونة بأول حرف من الاسم'; this.hidden = true; });
 
   window.onPicked = function (r) {
+    log('نتيجة اختيار: ' + JSON.stringify({ k: r.kind, n: r.name, s: r.size, c: r.cancel, e: r.error }));
     if (r.cancel) return;
-    if (r.error) { alert('تعذّر قراءة الملف: ' + r.error); return; }
-    if (r.kind === 'key') { N.applyKey(); return; }
-    picked[r.kind] = r.name;
-    var el = { html: '#htmlName', zip: '#zipName', icon: '#iconName' }[r.kind];
-    if (el) $(el).textContent = '✓ ' + r.name + ' (' + Math.round(r.size / 1024) + ' KB)';
-    if (r.kind === 'html' && !$('#name').value) { $('#name').value = r.name.replace(/\.html?$/i, '').slice(0, 40); pkg(); }
-    if (r.kind === 'zip' && !$('#name').value) { $('#name').value = r.name.replace(/\.zip$/i, '').slice(0, 40); pkg(); }
+    if (r.error) { toast('تعذّر قراءة الملف: ' + r.error); return; }
+    if (r.kind === 'key') { try { N.applyKey(); } catch (e) { toast('' + e); } return; }
+    var kb = r.size > 1048576 ? (r.size / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(r.size / 1024)) + ' KB';
+    if (!cur) return;
+    if (r.kind === 'icon') {
+      cur.newIcon = true; cur.clearIcon = false; resetIconUi(r.thumb || '');
+      $('#iconName').textContent = '✓ ' + r.name + ' (' + kb + ')'; $('#clearIcon').hidden = false; return;
+    }
+    if (r.kind === 'html') { $('#code').value = r.text || ''; $('#htmlName').textContent = '✓ اتحمّل: ' + r.name + ' (' + kb + ') — تقدر تعدّله تحت'; }
+    if (r.kind === 'zip') { cur.newZip = true; $('#zipName').textContent = '✓ ' + r.name + ' (' + kb + ')'; }
+    if (!$('#name').value) { $('#name').value = r.name.replace(/\.(html?|zip)$/i, '').slice(0, 40); }
   };
 
+  /* ---------- حفظ وبناء ---------- */
   function msg(t, c) { var m = $('#msg'); m.textContent = t; m.className = c || ''; }
-  window.onProgress = function (t) { msg(t, ''); };
+  function showProg() { $('#prog').hidden = false; $('#prog').scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+  window.onProgress = function (t) { msg(t, ''); log(t); };
 
-  $('#go').addEventListener('click', function () {
-    var name = $('#name').value.trim();
-    $('#prog').hidden = false; ['install', 'allow', 'save'].forEach(function (i) { $('#' + i).hidden = true; });
-    if (!name) return msg('اكتب اسم التطبيق.', 'bad');
-    if (source === 'html' && !picked.html) return msg('اختار ملف HTML.', 'bad');
-    if (source === 'zip' && !picked.zip) return msg('اختار ملف ZIP.', 'bad');
-    if (source === 'editor' && !$('#code').value.trim()) return msg('المحرر فاضي.', 'bad');
-    if (source === 'url' && !/^https:\/\/.+/i.test($('#url').value.trim())) return msg('الرابط لازم يبدأ بـ https://', 'bad');
-    try { localStorage.setItem('h2a_ui', JSON.stringify({ name: name })); } catch (e) {}
-    $('#go').disabled = true; msg('جاري البناء…', '');
+  function readCfg() {
     var perms = Array.prototype.map.call(document.querySelectorAll('[data-perm]:checked'), function (x) { return x.dataset.perm; });
-    N.build(JSON.stringify({
-      appName: name, source: source, url: $('#url').value.trim(), code: $('#code').value, versionName: $('#ver').value.trim() || '1.0',
-      orientation: $('#orient').value, backgroundColor: $('#bg').value, fullscreen: $('#fullscreen').checked, keepScreenOn: $('#keepOn').checked,
-      desktopMode: $('#desktop').checked, allowMixedContent: $('#mixed').checked, downloads: $('#downloads').checked, bridge: $('#bridge').checked,
-      cacheMode: $('#cache').value, permissions: perms, useIcon: !!picked.icon
-    }));
-  });
+    return {
+      id: cur.id, appName: $('#name').value.trim(), source: source, code: $('#code').value, url: $('#url').value.trim(), versionName: $('#ver').value.trim() || '1.0',
+      newZip: cur.newZip, newIcon: cur.newIcon, clearIcon: cur.clearIcon,
+      settings: { orientation: $('#orient').value, backgroundColor: $('#bg').value, fullscreen: $('#fullscreen').checked, keepScreenOn: $('#keepOn').checked, pullToRefresh: $('#pull').checked,
+        desktopMode: $('#desktop').checked, allowMixedContent: $('#mixed').checked, downloads: $('#downloads').checked, bridge: $('#bridge').checked, cacheMode: $('#cache').value, permissions: perms }
+    };
+  }
+  function validate(c) {
+    if (!c.appName) return 'اكتب اسم التطبيق.';
+    if (source === 'html' && !c.code.trim()) return 'كود الـ HTML فاضي: اختار ملف أو الصق الكود.';
+    if (source === 'zip' && !c.newZip && !cur.hasZip) return 'اختار ملف ZIP الأول.';
+    if (source === 'url' && !/^https:\/\/.+/i.test(c.url)) return 'الرابط لازم يبدأ بـ https://';
+    return null;
+  }
+  // بيحفظ المشروع. بيرجّع true لو نجح.
+  function save() {
+    var c = readCfg(), err = validate(c);
+    if (err) { showProg(); $('#spin').hidden = true; msg(err, 'bad'); return false; }
+    var r;
+    try { r = JSON.parse(N.saveProject(JSON.stringify(c))); } catch (e) { showProg(); msg('فشل الحفظ: ' + e, 'bad'); return false; }
+    if (!r.ok) { showProg(); $('#spin').hidden = true; msg('فشل الحفظ: ' + r.msg, 'bad'); return false; }
+    var wasNew = !cur.id;
+    cur.id = r.id; cur.newZip = false; cur.newIcon = false; cur.clearIcon = false;
+    if (wasNew) { $('#editTitle').textContent = c.appName; $('#go').textContent = '🔄 حدّث التطبيق'; }
+    log('حفظ: ' + r.id);
+    refreshMeta();
+    return true;
+  }
+  function refreshMeta() {
+    try { var m = JSON.parse(N.getProject(cur.id)); cur.hasIcon = !!m.hasIcon; cur.hasZip = !!m.hasZip; $('#pkgLine').hidden = false; $('#pkg').textContent = m.pkg || '—'; $('#vcode').textContent = m.versionCode || 0; } catch (e) { log('meta: ' + e); }
+  }
+  $('#saveOnly').addEventListener('click', function () { if (save()) toast2('اتحفظ ✓'); });
+  function toast2(t) { var e = $('#toast'); e.style.background = 'var(--ok)'; e.textContent = t; e.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(function () { e.hidden = true; e.style.background = ''; }, 2200); }
+
+  function startBuild() {
+    ['install', 'allow', 'save'].forEach(function (i) { $('#' + i).hidden = true; });
+    if (!save()) return;
+    showProg(); $('#spin').hidden = false; $('#go').disabled = true; $('#saveOnly').disabled = true; msg('جاري البناء…', '');
+    try { N.buildProject(cur.id); } catch (e) { $('#go').disabled = false; $('#saveOnly').disabled = false; $('#spin').hidden = true; msg('فشل بدء البناء: ' + e, 'bad'); }
+  }
+  $('#go').addEventListener('click', startBuild);
 
   window.onBuilt = function (r) {
-    $('#go').disabled = false;
+    $('#go').disabled = false; $('#saveOnly').disabled = false; $('#spin').hidden = true;
+    log('نتيجة البناء: ' + JSON.stringify(r));
     if (!r.ok) return msg('فشل البناء: ' + r.msg, 'bad');
-    msg('✓ جاهز (' + Math.round(r.size / 1024) + ' KB). اضغط تثبيت.' + (r.warn ? ' تنبيه: ' + r.warn : ''), 'ok');
-    $('#save').hidden = false;
-    if (N.canInstall()) $('#install').hidden = false; else { $('#allow').hidden = false; $('#install').hidden = false; }
+    cur.hasApk = true; cur.vcode = r.versionCode; $('#vcode').textContent = r.versionCode;
+    msg('✓ التطبيق جاهز (' + (r.size > 1048576 ? (r.size / 1048576).toFixed(1) + ' MB' : Math.round(r.size / 1024) + ' KB') + ') · رقم البناء ' + r.versionCode + (r.warn ? ' — تنبيه: ' + r.warn : ''), 'ok');
+    $('#save').hidden = false; $('#install').hidden = false;
+    if (!N.canInstall()) $('#allow').hidden = false;
   };
-  $('#install').addEventListener('click', function () { if (!N.canInstall()) { msg('اسمح بالتثبيت الأول (الزرار اللي تحت)، وارجع واضغط تثبيت.', 'bad'); return; } msg('جاري التثبيت…', ''); N.install(); });
+
+  function doInstall(id) {
+    if (!N.canInstall()) { toast('اسمح بالتثبيت من هذا التطبيق الأول.'); N.allowInstall(); return; }
+    N.install(id);
+  }
+  $('#install').addEventListener('click', function () {
+    if (!N.canInstall()) { msg('اسمح بالتثبيت الأول (الزرار اللي تحته)، وارجع واضغط تثبيت.', 'bad'); $('#allow').hidden = false; return; }
+    msg('جاري التثبيت… وافق على رسالة النظام اللي هتظهر.', ''); N.install(cur.id);
+  });
   $('#allow').addEventListener('click', function () { N.allowInstall(); });
-  $('#save').addEventListener('click', function () { N.saveApk(); });
-  window.onInstall = function (r) { if (r.ok) msg('✓ تم التثبيت. افتح التطبيق من الشاشة الرئيسية.', 'ok'); else msg('التثبيت ما تمش: ' + (r.msg || ''), 'bad'); };
+  $('#save').addEventListener('click', function () { N.saveApk(cur.id, $('#name').value.trim()); });
+  window.onInstall = function (r) {
+    log('تثبيت: ' + JSON.stringify(r));
+    if (view === 'edit') { if (r.ok) msg('✓ تم التثبيت. افتح التطبيق من الشاشة الرئيسية.', 'ok'); else msg('التثبيت ما تمش: ' + (r.msg || 'تم الإلغاء'), 'bad'); }
+    else if (r.ok) toast2('✓ تم التثبيت'); else toast('التثبيت ما تمش: ' + (r.msg || 'تم الإلغاء'));
+  };
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && !$('#allow').hidden && N.canInstall()) $('#allow').hidden = true; });
+
+  cur = fresh();
+  show('home');
 })();
 </script>
 </body>
