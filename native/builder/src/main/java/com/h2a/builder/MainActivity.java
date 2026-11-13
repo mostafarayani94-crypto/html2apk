@@ -9,49 +9,52 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInstaller;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.provider.MediaStore;
 import android.provider.OpenableColumns;
-import android.database.Cursor;
 import android.provider.Settings;
 import android.util.Base64;
 import android.webkit.JavascriptInterface;
+import android.webkit.JsResult;
+import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.webkit.JsResult;
-import com.h2a.builder.core.ApkBuilder;
 import org.json.JSONObject;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.security.SecureRandom;
 
-/** واجهة (HTML محلي) + جسر Native بيعمل البناء والتوقيع والتثبيت أوفلاين. */
+/** واجهة (HTML محلي) + جسر Native بيدير المشاريع والبناء والتوقيع والتثبيت أوفلاين. */
 public class MainActivity extends Activity {
     private static final int REQ_PICK = 7;
     private static final String ACTION_INSTALL = "com.h2a.builder.INSTALL_RESULT";
     private WebView web;
     private String pickKind;
-    private File lastApk;
-    private String lastName = "app";
     private Signer signer;
+    private Projects projects;
     private BroadcastReceiver installReceiver;
 
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
+        final SharedPreferences crashPrefs = getSharedPreferences("diag", MODE_PRIVATE);
+        final Thread.UncaughtExceptionHandler prev = Thread.getDefaultUncaughtExceptionHandler();
+        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            @Override public void uncaughtException(Thread t, Throwable e) {
+                try { crashPrefs.edit().putString("crash", android.util.Log.getStackTraceString(e)).commit(); } catch (Throwable x) { /* */ }
+                if (prev != null) prev.uncaughtException(t, e);
+            }
+        });
         signer = new Signer(this);
+        projects = new Projects(this, signer);
         web = new WebView(this);
         setContentView(web);
         WebSettings s = web.getSettings();
@@ -79,7 +82,13 @@ public class MainActivity extends Activity {
     }
 
     @Override protected void onDestroy() { try { unregisterReceiver(installReceiver); } catch (Exception e) { /* */ } super.onDestroy(); }
-    @Override public void onBackPressed() { if (web.canGoBack()) web.goBack(); else super.onBackPressed(); }
+
+    /** الرجوع: الواجهة هي اللي بتقرر (ترجع لقائمة المشاريع أو تقفل قائمة)، ولو ما اتعاملتش معاه التطبيق يقفل. */
+    @Override public void onBackPressed() {
+        web.evaluateJavascript("window.h2aBack?window.h2aBack():false", new ValueCallback<String>() {
+            @Override public void onReceiveValue(String v) { if (!"true".equals(v)) MainActivity.super.onBackPressed(); }
+        });
+    }
 
     private void toast(String m) { android.widget.Toast.makeText(this, m, android.widget.Toast.LENGTH_SHORT).show(); }
 
@@ -93,24 +102,42 @@ public class MainActivity extends Activity {
         return o.toString();
     }
 
+    private static String err(Throwable e) {
+        String m = e.getMessage();
+        return m == null || m.isEmpty() ? e.getClass().getSimpleName() : m;
+    }
+
+    private File cacheFile(String kind) { return new File(getCacheDir(), "pick_" + kind); }
+
     @Override
     protected void onActivityResult(int req, int res, Intent data) {
         super.onActivityResult(req, res, data);
         if (req != REQ_PICK) return;
         final String kind = pickKind;
-        if (res != RESULT_OK || data == null || data.getData() == null) { js("onPicked", q(new String[][]{{"kind", kind}, {"cancel", "true"}})); return; }
-        final Uri uri = data.getData();
+        if (res != RESULT_OK) { js("onPicked", q(new String[][]{{"kind", kind}, {"cancel", "true"}})); return; }
+        Uri picked = data == null ? null : data.getData();
+        if (picked == null && data != null && data.getClipData() != null && data.getClipData().getItemCount() > 0) picked = data.getClipData().getItemAt(0).getUri();
+        if (picked == null) { js("onPicked", q(new String[][]{{"kind", kind}, {"error", "الاختيار رجع من غير ملف، جرّب تاني أو اختار من مجلد التنزيلات"}})); return; }
+        final Uri uri = picked;
         new Thread(new Runnable() { public void run() {
             try {
                 String name = "file";
                 Cursor c = getContentResolver().query(uri, null, null, null, null);
-                if (c != null) { try { if (c.moveToFirst()) { int i = c.getColumnIndex(OpenableColumns.DISPLAY_NAME); if (i >= 0) name = c.getString(i); } } finally { c.close(); } }
-                File dst = new File(getCacheDir(), "pick_" + kind);
-                long size = copy(getContentResolver().openInputStream(uri), new FileOutputStream(dst), 60L * 1024 * 1024);
+                if (c != null) { try { if (c.moveToFirst()) { int i = c.getColumnIndex(OpenableColumns.DISPLAY_NAME); if (i >= 0 && c.getString(i) != null) name = c.getString(i); } } finally { c.close(); } }
+                File dst = cacheFile(kind);
+                long limit = kind.equals("html") ? Projects.MAX_HTML : 60L * 1024 * 1024;
+                long size = copy(getContentResolver().openInputStream(uri), new FileOutputStream(dst), limit);
                 JSONObject o = new JSONObject();
                 o.put("kind", kind); o.put("name", name); o.put("size", size);
+                if (kind.equals("icon")) {
+                    android.graphics.Bitmap bm = android.graphics.BitmapFactory.decodeFile(dst.getAbsolutePath());
+                    if (bm == null) throw new IOException("الملف ده مش صورة صالحة (استخدم PNG أو JPG)");
+                    o.put("thumb", "data:image/png;base64," + Base64.encodeToString(Projects.png(Projects.square(bm, 128)), Base64.NO_WRAP));
+                } else if (kind.equals("html")) {
+                    o.put("text", new String(Projects.readAll(dst), "UTF-8"));
+                }
                 js("onPicked", o.toString());
-            } catch (Exception e) { js("onPicked", q(new String[][]{{"kind", kind}, {"error", String.valueOf(e.getMessage())}})); }
+            } catch (Throwable e) { js("onPicked", q(new String[][]{{"kind", kind}, {"error", err(e)}})); }
         } }).start();
     }
 
@@ -119,52 +146,78 @@ public class MainActivity extends Activity {
             byte[] buf = new byte[16384];
             long total = 0;
             int n;
-            while ((n = in.read(buf)) > 0) { total += n; if (total > limit) throw new IOException("الملف كبير جداً"); out.write(buf, 0, n); }
+            while ((n = in.read(buf)) > 0) { total += n; if (total > limit) throw new IOException(limit < 10L * 1024 * 1024 ? "الملف كبير جداً (الحد " + (limit / 1048576) + " MB). استخدم ZIP." : "الملف كبير جداً"); out.write(buf, 0, n); }
             return total;
         } finally { in.close(); out.close(); }
     }
 
-    private static byte[] readFile(File f) throws IOException {
-        ByteArrayOutputStream o = new ByteArrayOutputStream();
-        copy(new FileInputStream(f), o, Long.MAX_VALUE);
-        return o.toByteArray();
-    }
-
-    private void copyAsset(String name, File dst) throws IOException { copy(getAssets().open(name), new FileOutputStream(dst), Long.MAX_VALUE); }
-
     final class Native {
-        @JavascriptInterface public void pick(String kind) {
+        @JavascriptInterface public void pick(final String kind) {
             pickKind = kind;
-            final Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-            i.addCategory(Intent.CATEGORY_OPENABLE);
-            if (kind.equals("icon")) i.setType("image/*");
-            else if (kind.equals("zip")) i.setType("*/*");
-            else i.setType("*/*");
-            runOnUiThread(new Runnable() { public void run() { startActivityForResult(i, REQ_PICK); } });
+            runOnUiThread(new Runnable() { public void run() {
+                String mime = kind.equals("icon") ? "image/*" : "*/*";
+                try {
+                    Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                    i.addCategory(Intent.CATEGORY_OPENABLE);
+                    i.setType(mime);
+                    i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    startActivityForResult(i, REQ_PICK);
+                } catch (Throwable first) {
+                    try {
+                        Intent g = new Intent(Intent.ACTION_GET_CONTENT);
+                        g.addCategory(Intent.CATEGORY_OPENABLE);
+                        g.setType(mime);
+                        startActivityForResult(Intent.createChooser(g, "اختار ملف"), REQ_PICK);
+                    } catch (Throwable second) {
+                        js("onPicked", q(new String[][]{{"kind", kind}, {"error", "مفيش تطبيق ملفات على الجهاز يقدر يفتح الاختيار: " + second.getClass().getSimpleName()}}));
+                    }
+                }
+            } });
         }
 
-        /** ids: بيرجع معرّف الحزمة الخاص بالاسم (بيتولّد مرة وبيتحفظ، عشان التحديثات). */
-        @JavascriptInterface public String appIdFor(String name) {
-            SharedPreferences sp = getSharedPreferences("ids", MODE_PRIVATE);
-            String key = "n_" + name.trim();
-            String id = sp.getString(key, null);
-            if (id == null) {
-                String chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-                SecureRandom r = new SecureRandom();
-                StringBuilder sb = new StringBuilder("com.h2a.a");
-                for (int i = 0; i < 12; i++) sb.append(chars.charAt(r.nextInt(chars.length())));
-                id = sb.toString();
-                sp.edit().putString(key, id).apply();
-            }
-            return id;
+        // ---------- المشاريع ----------
+
+        @JavascriptInterface public String listProjects() {
+            try { return projects.list(); } catch (Throwable e) { return "[]"; }
         }
 
-        @JavascriptInterface public void build(final String cfgJson) {
+        @JavascriptInterface public String getProject(String id) {
+            try { return projects.get(id).toString(); } catch (Throwable e) { return q(new String[][]{{"error", err(e)}}); }
+        }
+
+        /** cfgJson فيه الإعدادات. ملفات ZIP والأيقونة الجديدة بتتاخد من آخر اختيار لو newZip/newIcon = true. */
+        @JavascriptInterface public String saveProject(String cfgJson) {
+            try {
+                JSONObject cfg = new JSONObject(cfgJson);
+                File z = cfg.optBoolean("newZip", false) ? cacheFile("zip") : null;
+                File ic = cfg.optBoolean("newIcon", false) ? cacheFile("icon") : null;
+                JSONObject m = projects.save(cfg, z, ic);
+                if (ic != null) ic.delete();
+                return q(new String[][]{{"ok", "true"}, {"id", m.getString("id")}});
+            } catch (Throwable e) { return q(new String[][]{{"ok", "false"}, {"msg", err(e)}}); }
+        }
+
+        @JavascriptInterface public String duplicateProject(String id) {
+            try { return q(new String[][]{{"ok", "true"}, {"id", projects.duplicate(id)}}); } catch (Throwable e) { return q(new String[][]{{"ok", "false"}, {"msg", err(e)}}); }
+        }
+
+        @JavascriptInterface public boolean deleteProject(String id) {
+            try { projects.delete(id); return true; } catch (Throwable e) { return false; }
+        }
+
+        @JavascriptInterface public void buildProject(final String id) {
             new Thread(new Runnable() { public void run() {
-                try { doBuild(new JSONObject(cfgJson)); }
-                catch (Throwable e) { android.util.Log.e("h2a", "build failed", e); js("onBuilt", q(new String[][]{{"ok", "false"}, {"msg", e.getClass().getSimpleName() + ": " + e.getMessage()}})); }
+                try {
+                    JSONObject r = projects.build(id, new Projects.Progress() { public void on(String m) { js("onProgress", JSONObject.quote(m)); } });
+                    js("onBuilt", r.toString());
+                } catch (Throwable e) {
+                    android.util.Log.e("h2a", "build failed", e);
+                    js("onBuilt", q(new String[][]{{"ok", "false"}, {"id", id}, {"msg", e.getClass().getSimpleName() + ": " + err(e)}}));
+                }
             } }).start();
         }
+
+        // ---------- التثبيت والحفظ ----------
 
         @JavascriptInterface public boolean canInstall() { return Build.VERSION.SDK_INT < 26 || getPackageManager().canRequestPackageInstalls(); }
 
@@ -174,17 +227,18 @@ public class MainActivity extends Activity {
             } });
         }
 
-        @JavascriptInterface public void install() {
+        @JavascriptInterface public void install(final String id) {
             new Thread(new Runnable() { public void run() {
                 try {
-                    if (lastApk == null || !lastApk.exists()) throw new IOException("ابنِ التطبيق الأول");
+                    File apk = projects.apk(id);
+                    if (!apk.exists()) throw new IOException("ابنِ التطبيق الأول");
                     PackageInstaller pi = getPackageManager().getPackageInstaller();
                     PackageInstaller.SessionParams sp = new PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL);
-                    int id = pi.createSession(sp);
-                    PackageInstaller.Session s = pi.openSession(id);
+                    int sid = pi.createSession(sp);
+                    PackageInstaller.Session s = pi.openSession(sid);
                     try {
-                        OutputStream o = s.openWrite("app.apk", 0, lastApk.length());
-                        InputStream fin = new FileInputStream(lastApk);
+                        OutputStream o = s.openWrite("app.apk", 0, apk.length());
+                        InputStream fin = new FileInputStream(apk);
                         try {
                             byte[] buf = new byte[65536];
                             int n;
@@ -192,19 +246,21 @@ public class MainActivity extends Activity {
                             s.fsync(o);
                         } finally { fin.close(); o.close(); }
                         Intent cb = new Intent(ACTION_INSTALL).setPackage(getPackageName());
-                        int flags = PendingIntent_FLAGS();
-                        android.app.PendingIntent pend = android.app.PendingIntent.getBroadcast(MainActivity.this, id, cb, flags);
+                        android.app.PendingIntent pend = android.app.PendingIntent.getBroadcast(MainActivity.this, sid, cb, pendingFlags());
                         s.commit(pend.getIntentSender());
                     } finally { s.close(); }
-                } catch (Throwable e) { js("onInstall", q(new String[][]{{"ok", "false"}, {"msg", String.valueOf(e.getMessage())}})); }
+                } catch (Throwable e) { js("onInstall", q(new String[][]{{"ok", "false"}, {"msg", err(e)}})); }
             } }).start();
         }
 
-        @JavascriptInterface public void saveApk() {
+        @JavascriptInterface public void saveApk(String id, String name) {
             try {
-                if (lastApk == null || !lastApk.exists()) throw new IOException("ابنِ التطبيق الأول");
-                toast("تم الحفظ: " + saveToDownloads(lastName + ".apk", "application/vnd.android.package-archive", readFile(lastApk)));
-            } catch (Exception e) { toast("فشل الحفظ: " + e.getMessage()); }
+                File apk = projects.apk(id);
+                if (!apk.exists()) throw new IOException("ابنِ التطبيق الأول");
+                String n = name.replaceAll("[^\\p{L}\\p{N}_ -]", "").trim();
+                if (n.isEmpty()) n = "app";
+                toast("تم الحفظ: " + saveToDownloads(n + ".apk", "application/vnd.android.package-archive", Projects.readAll(apk)));
+            } catch (Exception e) { toast("فشل الحفظ: " + err(e)); }
         }
 
         /** نسخة احتياطية لمفتاح التوقيع (مهمة: من غيرها مش هتقدر تحدّث تطبيقاتك لو مسحت التطبيق ده). */
@@ -214,21 +270,29 @@ public class MainActivity extends Activity {
                 o.put("key", Base64.encodeToString(signer.exportKey(), Base64.NO_WRAP));
                 o.put("cert", Base64.encodeToString(signer.exportCert(), Base64.NO_WRAP));
                 toast("تم الحفظ: " + saveToDownloads("h2a-signing-key.json", "application/json", o.toString().getBytes("UTF-8")));
-            } catch (Exception e) { toast("فشل: " + e.getMessage()); }
+            } catch (Exception e) { toast("فشل: " + err(e)); }
         }
-
-        @JavascriptInterface public void importKey() { pick("key"); }
 
         @JavascriptInterface public void applyKey() {
             try {
-                JSONObject o = new JSONObject(new String(readFile(new File(getCacheDir(), "pick_key")), "UTF-8"));
+                JSONObject o = new JSONObject(new String(Projects.readAll(cacheFile("key")), "UTF-8"));
                 signer.importKey(Base64.decode(o.getString("key"), Base64.DEFAULT), Base64.decode(o.getString("cert"), Base64.DEFAULT));
                 toast("تم استيراد المفتاح");
             } catch (Exception e) { toast("ملف المفتاح غير صالح"); }
         }
+
+        /** آخر تعطّل (لو حصل) عشان يتعرض في الواجهة بدل ما التطبيق يقفل ساكت. */
+        @JavascriptInterface public String lastCrash() {
+            SharedPreferences d = getSharedPreferences("diag", MODE_PRIVATE);
+            String c = d.getString("crash", "");
+            if (!c.isEmpty()) d.edit().remove("crash").apply();
+            return c.length() > 1500 ? c.substring(0, 1500) : c;
+        }
+
+        @JavascriptInterface public String info() { return "Android " + Build.VERSION.RELEASE + " (API " + Build.VERSION.SDK_INT + ") " + Build.MANUFACTURER + " " + Build.MODEL; }
     }
 
-    private static int PendingIntent_FLAGS() {
+    private static int pendingFlags() {
         int f = android.app.PendingIntent.FLAG_UPDATE_CURRENT;
         if (Build.VERSION.SDK_INT >= 31) f |= android.app.PendingIntent.FLAG_MUTABLE; // لازم mutable عشان النظام يضيف نتيجة التثبيت
         return f;
@@ -236,6 +300,13 @@ public class MainActivity extends Activity {
 
     private String saveToDownloads(String name, String mime, byte[] data) throws IOException {
         name = name.replaceAll("[\\\\/:*?\"<>|]", "_");
+        if (Build.VERSION.SDK_INT < 29) { // أندرويد 8 و9: مجلد التطبيق الخارجي (من غير صلاحيات)
+            File dir = getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS);
+            if (dir == null) throw new IOException("تعذّر الحفظ");
+            dir.mkdirs();
+            Projects.writeAll(new File(dir, name), data);
+            return "Android/data/" + getPackageName() + "/files/Download/" + name;
+        }
         ContentValues cv = new ContentValues();
         cv.put(MediaStore.Downloads.DISPLAY_NAME, name);
         cv.put(MediaStore.Downloads.MIME_TYPE, mime);
@@ -249,95 +320,5 @@ public class MainActivity extends Activity {
         cv.put(MediaStore.Downloads.IS_PENDING, 0);
         r.update(u, cv, null, null);
         return "Downloads/" + name;
-    }
-
-    private void progress(String m) { js("onProgress", JSONObject.quote(m)); }
-
-    private static final java.util.regex.Pattern COLOR = java.util.regex.Pattern.compile("^#[0-9a-fA-F]{6}$");
-
-    private void doBuild(JSONObject c) throws Exception {
-        String name = c.getString("appName").trim();
-        if (name.isEmpty() || name.length() > 40) throw new IOException("الاسم لازم من 1 إلى 40 حرف");
-        String source = c.optString("source", "html");
-        String bg = c.optString("backgroundColor", "#ffffff");
-        if (!COLOR.matcher(bg).matches()) bg = "#ffffff";
-        String orient = c.optString("orientation", "auto");
-        if (!orient.equals("portrait") && !orient.equals("landscape")) orient = "auto";
-        String cache = c.optString("cacheMode", "default");
-        if (!cache.equals("noCache") && !cache.equals("cacheElseNetwork")) cache = "default";
-        String versionName = c.optString("versionName", "1.0");
-        if (!versionName.matches("^[0-9A-Za-z._-]{1,20}$")) throw new IOException("رقم الإصدار غلط");
-        int versionCode = c.optInt("versionCode", 0);
-        SharedPreferences sp = getSharedPreferences("ids", MODE_PRIVATE);
-        if (versionCode <= 0) { versionCode = sp.getInt("v_" + name, 0) + 1; }
-        String pkg = new Native().appIdFor(name);
-
-        JSONObject shell = new JSONObject();
-        shell.put("orientation", orient);
-        shell.put("fullscreen", c.optBoolean("fullscreen", false));
-        shell.put("keepScreenOn", c.optBoolean("keepScreenOn", false));
-        shell.put("desktopMode", c.optBoolean("desktopMode", false));
-        shell.put("allowMixedContent", c.optBoolean("allowMixedContent", false));
-        shell.put("backgroundColor", bg);
-        shell.put("cacheMode", cache);
-        shell.put("bridge", c.optBoolean("bridge", true));
-        shell.put("downloads", c.optBoolean("downloads", true));
-        shell.put("permissions", c.optJSONArray("permissions") != null ? c.getJSONArray("permissions") : new org.json.JSONArray());
-
-        ApkBuilder.Spec spec = new ApkBuilder.Spec();
-        spec.packageName = pkg; spec.label = name; spec.versionName = versionName; spec.versionCode = versionCode;
-        if (source.equals("url")) {
-            String url = c.optString("url", "");
-            if (!url.startsWith("https://")) throw new IOException("الرابط لازم يبدأ بـ https://");
-            shell.put("url", url);
-            spec.remote = true;
-        } else if (source.equals("zip")) {
-            spec.zip = new File(getCacheDir(), "pick_zip");
-            if (!spec.zip.exists()) throw new IOException("اختار ملف ZIP");
-        } else if (source.equals("editor")) {
-            File f = new File(getCacheDir(), "editor.html");
-            FileOutputStream fo = new FileOutputStream(f);
-            try { fo.write(c.optString("code", "").getBytes("UTF-8")); } finally { fo.close(); }
-            if (f.length() == 0) throw new IOException("المحرر فاضي");
-            spec.html = f;
-        } else {
-            spec.html = new File(getCacheDir(), "pick_html");
-            if (!spec.html.exists()) throw new IOException("اختار ملف HTML");
-        }
-        final File iconFile = new File(getCacheDir(), "pick_icon");
-        if (c.optBoolean("useIcon", false) && iconFile.exists()) {
-            final Bitmap src = BitmapFactory.decodeFile(iconFile.getAbsolutePath());
-            if (src == null) throw new IOException("الأيقونة مش صورة صالحة");
-            spec.icons = new ApkBuilder.IconProvider() { public byte[] png(int size) {
-                int m = Math.min(src.getWidth(), src.getHeight());
-                Bitmap sq = Bitmap.createBitmap(src, (src.getWidth() - m) / 2, (src.getHeight() - m) / 2, m, m);
-                Bitmap sc = Bitmap.createScaledBitmap(sq, size, size, true);
-                ByteArrayOutputStream o = new ByteArrayOutputStream();
-                sc.compress(Bitmap.CompressFormat.PNG, 100, o);
-                return o.toByteArray();
-            } };
-        }
-        spec.configJson = shell.toString();
-
-        progress("تجهيز القالب…");
-        File template = new File(getCacheDir(), "template.apk");
-        copyAsset("template.apk", template);
-        File unsigned = new File(getCacheDir(), "unsigned.apk");
-        progress("بناء التطبيق…");
-        ApkBuilder.build(template, unsigned, spec);
-        progress(signer.hasKey() ? "توقيع التطبيق…" : "إنشاء مفتاح التوقيع (مرة واحدة، ممكن ياخد ثواني)…");
-        File out = new File(getCacheDir(), "signed.apk");
-        if (out.exists()) out.delete();
-        signer.sign(unsigned, out);
-        unsigned.delete();
-        template.delete();
-        lastApk = out;
-        lastName = name.replaceAll("[^\\p{L}\\p{N}_ -]", "").trim();
-        if (lastName.isEmpty()) lastName = "app";
-        sp.edit().putInt("v_" + name, versionCode).apply();
-        JSONObject res = new JSONObject();
-        res.put("ok", true); res.put("package", pkg);
-        if (spec.icons != null && spec.iconsReplaced == 0) res.put("warn", "الأيقونة ما اتبدّلتش (شكل القالب مختلف)"); res.put("size", out.length()); res.put("versionCode", versionCode);
-        js("onBuilt", res.toString());
     }
 }
