@@ -31,6 +31,30 @@
   #files-list{margin:8px 0 0;padding:0;list-style:none;color:var(--muted);font-size:13px}
   .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
   .chips button{border:1px solid var(--line);background:transparent;color:inherit;border-radius:999px;padding:4px 10px;font:inherit;font-size:13px;cursor:pointer}
+  [hidden]{display:none !important}
+  .hrow{display:flex;gap:8px;justify-content:space-between;align-items:flex-start;border-top:1px solid var(--line);padding:10px 0}
+  .hrow:first-child{border-top:0}
+  .hmain{flex:1;min-width:0;overflow-wrap:anywhere}
+  .hmain small{margin-top:2px}
+  .hbtns{display:flex;flex-direction:column;gap:6px}
+  .hbtns button,.tools button,.srow button{border:1px solid var(--line);background:transparent;color:inherit;border-radius:8px;padding:6px 10px;font:inherit;font-size:13px;cursor:pointer}
+  .hbtns button.danger{color:var(--err)}
+  .badge{display:inline-block;background:var(--brand-soft);color:var(--brand);border-radius:999px;padding:0 8px;font-size:12px;margin-inline-start:4px}
+  .tools{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  button.link{background:none;border:0;color:var(--brand);font:inherit;cursor:pointer;padding:0;text-decoration:underline;margin-top:8px}
+  .pv{background:var(--card);border-radius:14px;padding:14px;margin:10px 0;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+  .pv label.t{margin-top:8px;font-size:13px;color:var(--muted)}
+  .pv label.t:first-child{margin-top:0}
+  .pvn{font-weight:700;color:var(--brand);margin-bottom:4px}
+  .okbox,.warnbox{border-radius:12px;padding:10px 12px;margin:8px 0;font-size:14px}
+  .okbox{background:var(--brand-soft)}
+  .warnbox{border:1px solid var(--err)}
+  .srow{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px}
+  .pvbar{display:flex;gap:8px;position:sticky;bottom:0;background:var(--bg);padding:10px 0}
+  .pvbar button{flex:1;padding:12px;border-radius:12px;border:1px solid var(--line);background:transparent;color:inherit;font:inherit;font-weight:700;cursor:pointer}
+  .pvbar button.go{background:var(--brand);color:#fff;border:0}
+  .chk{display:flex;gap:8px;align-items:center;margin:6px 0;cursor:pointer}
+  .chk input{width:18px;height:18px}
 </style>
 <script>
 /* المكتبات: بيجرّب فولدر lib جنب الملف (أوفلاين) وبعدين أكتر من سيرفر على النت، ولو سيرفر محجوب عندك بيروح للي بعده */
@@ -78,8 +102,28 @@ window.__libs = (function(){
         <li>يعمل فهرس للمواضيع، وأهداف وملخص عام لو طلبتهم.</li>
         <li>يطلّع أسئلة مراجعة (تعريف + أكمل) ومعاها الإجابات لو كتبت "أسئلة".</li>
         <li>لو رفعت نموذج: يرتّب المحتوى على عناوين النموذج بالترتيب.</li>
+        <li>يصلّح الأخطاء البسيطة (مسافات، فواصل، كلمات مكرّرة) ويقترح تصحيح الكلمات المشتبه فيها.</li>
+        <li>يعرض معاينة تعدّل فيها قبل التحميل، ويسجّل كل عملية في السجل عشان تحمّلها تاني.</li>
         <li>مفيش أي حاجة بتتبعت لأي مكان، والملفات بتتعالج على جهازك.</li>
       </ul>
+    </details>
+  </div>
+
+  <div class="card">
+    <details id="histbox">
+      <summary>📜 سجل العمليات <span id="hcount"></span></summary>
+      <div style="margin-top:10px">
+        <input type="text" id="hsearch" placeholder="ابحث باسم الملف أو العنوان أو التعليمات...">
+        <div id="hlist" style="margin-top:8px"></div>
+        <small id="hstorage"></small>
+        <div class="tools">
+          <button type="button" id="hbackup">💾 نسخة احتياطية</button>
+          <button type="button" id="hrestore">♻️ استرجاع نسخة</button>
+          <button type="button" id="hclear">🗑 مسح السجل</button>
+          <input type="file" id="hfile" accept=".zip" hidden>
+        </div>
+        <small>كل تحويل بيتسجّل هنا ومعاه الملف الناتج، تقدر تحمّله تاني في أي وقت. السجل متخزّن على جهازك داخل المتصفح، فلو مسحت بيانات المتصفح بيضيع. خد نسخة احتياطية من وقت للتاني.</small>
+      </div>
     </details>
   </div>
 
@@ -136,9 +180,23 @@ window.__libs = (function(){
       </select>
     </div>
 
+    <div class="card">
+      <label class="chk"><input type="checkbox" id="pvon" checked> عرض معاينة وتعديل قبل التحميل</label>
+      <label class="chk"><input type="checkbox" id="autofix" checked> تصحيح الأخطاء البسيطة تلقائيًا (مسافات، فواصل، كلمات مكرّرة)</label>
+    </div>
+
     <button class="go" id="go" type="submit">إنشاء المحاضرة</button>
     <div id="msg" role="status"></div>
   </form>
+
+  <section id="preview" hidden>
+    <div class="card"><b>👀 المعاينة والتعديل</b><small>عدّل أي كلمة أو سطر، وبعدين اضغط تحميل. المتصفح بيحط خط أحمر تحت الكلمات الغلط.</small>
+      <div id="pvlang"></div>
+      <div class="tools"><button type="button" id="pvscan">🔍 فحص اللغة تاني</button></div>
+    </div>
+    <div id="pvbody"></div>
+    <div class="pvbar"><button type="button" id="pvback">رجوع</button><button type="button" id="pvgo" class="go">تحميل</button></div>
+  </section>
 </main>
 
 <script>
@@ -563,7 +621,7 @@ var FormFill = (function(){
     } else {
       meta.titles.slice(0, 4).forEach(function(h){ out.push(rtl ? "أن يتعرّف الدارس على " + h : "Explain " + h); });
     }
-    return out.map(function(x){ return "• " + clip(x, 60); });
+    return out;
   }
 
   function fill(xml, meta, rtl){
@@ -580,7 +638,7 @@ var FormFill = (function(){
         ps[0].appendChild(makeRun(doc, " " + topic, {sz: 22, bold: true, color: "1F497D", rtl: rtl}));
         var at = -1;
         for(var i = 0; i < ps.length; i++){ if(/At the end of this lesson/i.test(txt(ps[i]))) at = i; }
-        if(at >= 0) fillLines(doc, box, at, objectives(meta, rtl), {sz: 18, left: true}, rtl);
+        if(at >= 0) fillLines(doc, box, at, (meta.objectives && meta.objectives.length ? meta.objectives : objectives(meta, rtl)).map(function(x){ return "• " + clip(x, 90); }), {sz: 18, left: true}, rtl);
         n++;
       } else if(/^Period\b/i.test(first)){
         var lines = meta.titles.slice(0, 24).map(function(t){ return (rtl ? mins + " د\t" : mins + " min\t") + clip(t, 70); });
@@ -598,16 +656,113 @@ var FormFill = (function(){
         });
         n++;
       } else if(/^Evaluation/i.test(first)){
-        var ql = qs.slice(0, 6).map(function(q, i){ return (i + 1) + ". " + clip(q, 100); });
+        var ql = qs.slice(0, 6).map(function(q, i){ return (i + 1) + ". " + clip(q, 120); });
         if(ql.length) fillLines(doc, box, 0, ql, {sz: 20, left: true}, rtl);
         n++;
       }
     }
     return {xml: new XMLSerializer().serializeToString(doc), filled: n};
   }
-  return {fill: fill, isForm: isForm};
+  return {fill: fill, isForm: isForm, objectives: objectives};
 })();
 /*FORM_END*/
+/*LANG_START*/
+var Lang = (function(){
+  "use strict";
+  var AR_PAIRS = ("اذا=إذا|الى=إلى|لاكن=لكن|هاذا=هذا|هاذه=هذه|ذالك=ذلك|هاؤلاء=هؤلاء|الذى=الذي|التى=التي|اللذى=الذي|اللتى=التي|مستشفي=مستشفى|" +
+    "انشاء=إنشاء|اضافة=إضافة|الاضافة=الإضافة|اضافي=إضافي|ادارة=إدارة|الادارة=الإدارة|اداري=إداري|اجراء=إجراء|الاجراء=الإجراء|اجراءات=إجراءات|الاجراءات=الإجراءات|" +
+    "اهمية=أهمية|الاهمية=الأهمية|اسباب=أسباب|الاسباب=الأسباب|اعراض=أعراض|الاعراض=الأعراض|امراض=أمراض|الامراض=الأمراض|اطفال=أطفال|الاطفال=الأطفال|" +
+    "ادوية=أدوية|الادوية=الأدوية|اسنان=أسنان|الاسنان=الأسنان|الانسان=الإنسان|انسان=إنسان|اساسي=أساسي|الاساسي=الأساسي|اساس=أساس|الاساس=الأساس|" +
+    "اسلوب=أسلوب|الاسلوب=الأسلوب|الاولى=الأولى|الاول=الأول|الاخرى=الأخرى|اخرى=أخرى|اصابة=إصابة|الاصابة=الإصابة|الاصابات=الإصابات|اصابات=إصابات|" +
+    "اسعاف=إسعاف|الاسعاف=الإسعاف|الاسعافات=الإسعافات|احصائيات=إحصائيات|الاحصاء=الإحصاء|ارشادات=إرشادات|الارشادات=الإرشادات|اسئلة=أسئلة|الاسئلة=الأسئلة|" +
+    "اجابة=إجابة|الاجابة=الإجابة|اجابات=إجابات|الاجابات=الإجابات|امكانية=إمكانية|الامكانية=الإمكانية|انواع=أنواع|الانواع=الأنواع|الاورام=الأورام|اورام=أورام|" +
+    "الاعصاب=الأعصاب|اعصاب=أعصاب|الاوعية=الأوعية|اوعية=أوعية|الاوردة=الأوردة|الاعضاء=الأعضاء|اعضاء=أعضاء|الاجهزة=الأجهزة|اجهزة=أجهزة|الاداء=الأداء|اداء=أداء|" +
+    "ادوات=أدوات|الادوات=الأدوات|الاهداف=الأهداف|اهداف=أهداف|الاشخاص=الأشخاص|اشخاص=أشخاص|الاشعة=الأشعة|اشعة=أشعة|الاطباء=الأطباء|اطباء=أطباء|الالم=الألم|" +
+    "الاسهال=الإسهال|اسهال=إسهال|الامساك=الإمساك|الاغماء=الإغماء|الاجهاد=الإجهاد|اجهاد=إجهاد|الارهاق=الإرهاق|ارهاق=إرهاق|" +
+    "الصحه=الصحة|الرعايه=الرعاية|الوقايه=الوقاية|المحاضره=المحاضرة|الحياه=الحياة|الحاله=الحالة|الجرعه=الجرعة|الجلطه=الجلطة|الازمه=الأزمة|الذبحه=الذبحة|الصدريه=الصدرية|الدمويه=الدموية|الاصابه=الإصابة").split("|");
+  var EN_PAIRS = ("recieve=receive|occured=occurred|occurence=occurrence|seperate=separate|definately=definitely|teh=the|adn=and|wich=which|becuase=because|untill=until|" +
+    "accomodate=accommodate|necesary=necessary|neccessary=necessary|enviroment=environment|goverment=government|begining=beginning|beleive=believe|existance=existence|" +
+    "independant=independent|publically=publicly|refered=referred|relevent=relevant|succesful=successful|successfull=successful|tommorow=tomorrow|wierd=weird|writting=writing|" +
+    "symtoms=symptoms|sympthoms=symptoms|symptomes=symptoms|inflamation=inflammation|preasure=pressure|hypertention=hypertension|diabetis=diabetes|nausia=nausea|" +
+    "arthritus=arthritis|alot=a lot|thier=their|freind=friend|calender=calendar|catagory=category|diffrent=different|importent=important|knowlege=knowledge|" +
+    "occassion=occasion|persistant=persistent|proffesional=professional|reccomend=recommend|tecnique=technique|treatement=treatment|diagnosys=diagnosis").split("|");
+  var AR = {}, EN = {};
+  AR_PAIRS.forEach(function(p){ var i = p.indexOf("="); AR[p.slice(0, i)] = p.slice(i + 1); });
+  EN_PAIRS.forEach(function(p){ var i = p.indexOf("="); EN[p.slice(0, i)] = p.slice(i + 1); });
+  var ARTOK = "[\\u0621-\\u063A\\u0640-\\u0652\\u0671-\\u06D3]";
+  var TOKRE = new RegExp(ARTOK + "+|[A-Za-z]+", "g");
+  var LABELS = {tatweel: "تطويل (ـ) في الكلمات", spaces: "مسافات زيادة", punctSpace: "مسافة قبل علامة الترقيم", afterPunct: "مسافة ناقصة بعد الفاصلة", repeat: "كلمة مكرّرة", paren: "مسافة جوه القوس", dup: "علامة ترقيم مكرّرة"};
+  var REPEAT_OK = {had: 1, that: 1};
+
+  function fixText(s){
+    s = String(s == null ? "" : s);
+    var d = {}; function inc(k){ d[k] = (d[k] || 0) + 1; }
+    s = s.replace(/ـ+/g, function(){ inc("tatweel"); return ""; });
+    s = s.replace(/[ \t ]{2,}/g, function(){ inc("spaces"); return " "; });
+    s = s.replace(/[ \t]+([,.;:!?،؛؟])/g, function(m, p){ inc("punctSpace"); return p; });
+    s = s.replace(/([,;،؛؟])(?=[^\s\d,.;:!?،؛؟)\]}"'»”’\-])/g, function(m, p){ inc("afterPunct"); return p + " "; });
+    s = s.replace(/(^|[^\p{L}\p{M}\d])([\p{L}\p{M}]{2,})(?:[ \t]+\2)+(?![\p{L}\p{M}\d])/giu, function(m, pre, w){
+      if(REPEAT_OK[w.toLowerCase()]) return m; inc("repeat"); return pre + w;
+    });
+    s = s.replace(/\([ \t]+/g, function(){ inc("paren"); return "("; });
+    s = s.replace(/[ \t]+\)/g, function(){ inc("paren"); return ")"; });
+    s = s.replace(/([،؟,])\1+/g, function(m, p){ inc("dup"); return p; });
+    var n = 0; Object.keys(d).forEach(function(k){ n += d[k]; });
+    return {text: s, count: n, details: d};
+  }
+  function merge(a, b){ Object.keys(b).forEach(function(k){ a[k] = (a[k] || 0) + b[k]; }); }
+
+  /* بيطبّق التصحيح الآمن على كل نصوص المحاضرة */
+  function fixLec(lec){
+    var total = {count: 0, details: {}};
+    function f(s){ var r = fixText(s); total.count += r.count; merge(total.details, r.details); return r.text; }
+    lec.title = f(lec.title);
+    (lec.sections || []).forEach(function(s){
+      s.heading = f(s.heading); s.body = f(s.body); s.notes = f(s.notes);
+      s.bullets = (s.bullets || []).map(f);
+    });
+    return total;
+  }
+  function fixMeta(meta){
+    var total = {count: 0, details: {}};
+    function f(s){ var r = fixText(s); total.count += r.count; merge(total.details, r.details); return r.text; }
+    meta.topic = f(meta.topic);
+    ["titles", "questions", "objectives"].forEach(function(k){ if(meta[k]) meta[k] = meta[k].map(f); });
+    return total;
+  }
+  function describe(details){
+    return Object.keys(details).map(function(k){ return (LABELS[k] || k) + ": " + details[k]; });
+  }
+
+  function strip(t){ return t.replace(/[ً-ْـ]/g, ""); }
+  /* كلمات مشتبه فيها (إملاء شائع) — بتتعرض للمراجعة ومش بتتغيّر لوحدها */
+  function suggest(texts){
+    var found = {};
+    texts.forEach(function(txt){
+      (String(txt || "").match(TOKRE) || []).forEach(function(tok){
+        var right = null;
+        if(/^[A-Za-z]/.test(tok)){
+          var lo = tok.toLowerCase();
+          if(EN[lo]){ right = tok[0] === tok[0].toUpperCase() && tok.length > 1 && tok !== tok.toUpperCase() ? EN[lo][0].toUpperCase() + EN[lo].slice(1) : EN[lo]; }
+        } else {
+          var t = strip(tok);
+          if(AR[t]) right = AR[t];
+          else if(t.length > 3 && "وفبكل".indexOf(t[0]) >= 0 && AR[t.slice(1)]) right = t[0] + AR[t.slice(1)];
+        }
+        if(right && right !== tok){ var k = tok + "\u0001" + right; found[k] = found[k] || {wrong: tok, right: right, count: 0}; found[k].count++; }
+      });
+    });
+    return Object.keys(found).map(function(k){ return found[k]; }).sort(function(a, b){ return b.count - a.count; });
+  }
+  function esc(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+  function replaceAll(text, wrong, right){
+    var re = new RegExp("(^|[^\\u0621-\\u063A\\u0640-\\u0652\\u0671-\\u06D3A-Za-z])" + esc(wrong) + "(?![\\u0621-\\u063A\\u0640-\\u0652\\u0671-\\u06D3A-Za-z])", "g");
+    return String(text).replace(re, function(m, pre){ return pre + right; });
+  }
+  return {fixText: fixText, fixLec: fixLec, fixMeta: fixMeta, describe: describe, suggest: suggest, replaceAll: replaceAll};
+})();
+/*LANG_END*/
+
 
 
 (function(){
@@ -716,16 +871,18 @@ var FormFill = (function(){
     throw new Error("صيغة الملف مش مدعومة: " + file.name);
   }
 
-  /* ---------- تصدير الملفات ---------- */
+  /* ---------- تصدير الملفات (كل دالة بترجّع {blob, name}) ---------- */
   function saveBlob(blob, name){
     var a = document.createElement("a");
     a.href = URL.createObjectURL(blob); a.download = name;
     document.body.appendChild(a); a.click();
-    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 4000);
   }
   function safeName(t){ return (t || "lecture").replace(/[\\\/:*?"<>|]+/g, "-").trim().slice(0, 50) || "lecture"; }
   function esc(s){ return String(s == null ? "" : s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+  function escA(s){ return esc(s).replace(/"/g, "&quot;"); }
   function baseName(n){ return (n || "").replace(/\.[^.]+$/, "").replace(/[_\-]+/g, " ").trim(); }
+  var DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
   async function buildDocx(lec, rtl){
     need("docx", window.docx);
@@ -742,7 +899,7 @@ var FormFill = (function(){
       if(s.notes) kids.push(para((rtl ? "ملاحظة: " : "Note: ") + s.notes, {italics: true}));
     });
     var doc = new D.Document({sections: [{children: kids}]});
-    saveBlob(await D.Packer.toBlob(doc), safeName(lec.title) + ".docx");
+    return {blob: await D.Packer.toBlob(doc), name: safeName(lec.title) + ".docx"};
   }
 
   async function buildPptx(lec, rtl){
@@ -767,7 +924,9 @@ var FormFill = (function(){
       }
       if(sec.notes) s.addNotes(sec.notes);
     });
-    await p.writeFile({fileName: safeName(lec.title) + ".pptx"});
+    var out = await p.write({outputType: "blob"});
+    var blob = out instanceof Blob ? out : new Blob([out], {type: "application/vnd.openxmlformats-officedocument.presentationml.presentation"});
+    return {blob: blob, name: safeName(lec.title) + ".pptx"};
   }
 
   async function buildPdf(lec, rtl){
@@ -788,13 +947,276 @@ var FormFill = (function(){
     holder.innerHTML = h;
     document.body.appendChild(holder);
     try{
-      await html2pdf().from(holder).set({
-        margin: [12, 10, 12, 10], filename: safeName(lec.title) + ".pdf",
+      var blob = await html2pdf().from(holder).set({
+        margin: [12, 10, 12, 10],
         image: {type: "jpeg", quality: .96}, html2canvas: {scale: 2, useCORS: true},
         jsPDF: {unit: "mm", format: "a4", orientation: "portrait"},
         pagebreak: {mode: ["css", "legacy"]}
-      }).save();
+      }).toPdf().get("pdf").then(function(pdf){ return pdf.output("blob"); });
+      return {blob: blob, name: safeName(lec.title) + ".pdf"};
     } finally { holder.remove(); }
+  }
+
+  /* ---------- سجل العمليات (IndexedDB على جهازك) ---------- */
+  var Hist = (function(){
+    var dbp = null;
+    function open(){
+      if(dbp) return dbp;
+      dbp = new Promise(function(res, rej){
+        if(!window.indexedDB){ rej(new Error("المتصفح ده مش بيدعم تخزين السجل.")); return; }
+        var r = indexedDB.open("simo-lecture", 1);
+        r.onupgradeneeded = function(){ var db = r.result; db.createObjectStore("ops", {keyPath: "id", autoIncrement: true}); db.createObjectStore("blobs"); };
+        r.onsuccess = function(){ res(r.result); };
+        r.onerror = function(){ rej(r.error || new Error("مش قادر أفتح تخزين السجل.")); };
+      });
+      dbp.catch(function(){ dbp = null; });
+      return dbp;
+    }
+    async function add(meta, blob){
+      var buf = await blob.arrayBuffer(), db = await open();
+      meta = Object.assign({}, meta); delete meta.id; meta.mime = blob.type; meta.size = blob.size;
+      return new Promise(function(res, rej){
+        var t = db.transaction(["ops", "blobs"], "readwrite"), id;
+        var rq = t.objectStore("ops").add(meta);
+        rq.onsuccess = function(){ id = rq.result; t.objectStore("blobs").put(buf, id); };
+        t.oncomplete = function(){ res(id); };
+        t.onerror = t.onabort = function(){ rej(t.error || new Error("فشل حفظ السجل.")); };
+      });
+    }
+    async function list(){
+      var db = await open();
+      return new Promise(function(res, rej){
+        var rq = db.transaction("ops").objectStore("ops").getAll();
+        rq.onsuccess = function(){ res((rq.result || []).sort(function(a, b){ return b.ts - a.ts; })); };
+        rq.onerror = function(){ rej(rq.error); };
+      });
+    }
+    async function raw(id){
+      var db = await open();
+      return new Promise(function(res, rej){
+        var rq = db.transaction("blobs").objectStore("blobs").get(id);
+        rq.onsuccess = function(){ res(rq.result); };
+        rq.onerror = function(){ rej(rq.error); };
+      });
+    }
+    async function del(id){
+      var db = await open();
+      return new Promise(function(res, rej){
+        var t = db.transaction(["ops", "blobs"], "readwrite");
+        t.objectStore("ops").delete(id); t.objectStore("blobs").delete(id);
+        t.oncomplete = function(){ res(); }; t.onerror = t.onabort = function(){ rej(t.error); };
+      });
+    }
+    async function clear(){
+      var db = await open();
+      return new Promise(function(res, rej){
+        var t = db.transaction(["ops", "blobs"], "readwrite");
+        t.objectStore("ops").clear(); t.objectStore("blobs").clear();
+        t.oncomplete = function(){ res(); }; t.onerror = t.onabort = function(){ rej(t.error); };
+      });
+    }
+    return {add: add, list: list, raw: raw, del: del, clear: clear};
+  })();
+
+  var FMT_NAME = {docx: "Word", pptx: "PowerPoint", pdf: "PDF", form: "نموذج Word"};
+  function fmtSize(n){ return n > 1048576 ? (n / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(n / 1024)) + " KB"; }
+  var histAll = [];
+  async function renderHist(){
+    var box = $("hlist");
+    try{
+      histAll = await Hist.list();
+    }catch(e){
+      box.innerHTML = '<small class="err">' + esc(e && e.message ? e.message : e) + " السجل مش هيشتغل على المتصفح ده (جرّب متصفح عادي مش خاص).</small>";
+      $("hcount").textContent = "";
+      return;
+    }
+    $("hcount").textContent = histAll.length ? "(" + histAll.length + ")" : "";
+    var q = $("hsearch").value.trim().toLowerCase();
+    var rows = histAll.filter(function(o){
+      if(!q) return true;
+      return [o.title, o.outName, (o.files || []).join(" "), o.instr, o.tpl].join(" ").toLowerCase().indexOf(q) >= 0;
+    });
+    if(!rows.length){ box.innerHTML = '<small>' + (histAll.length ? "مفيش نتايج للبحث ده." : "لسه مفيش عمليات. أول ما تحوّل ملف هتلاقيه هنا.") + '</small>'; }
+    else box.innerHTML = rows.map(function(o){
+      var when = new Date(o.ts).toLocaleString("ar-EG", {dateStyle: "medium", timeStyle: "short"});
+      return '<div class="hrow"><div class="hmain"><b>' + esc(o.title || o.outName) + '</b> <span class="badge">' + esc(FMT_NAME[o.kind] || FMT_NAME[o.fmt] || o.fmt) + '</span>' +
+        '<small>' + esc(when) + ' · ' + esc(fmtSize(o.size || 0)) + '</small>' +
+        '<small>من: ' + esc((o.files || []).join("، ")) + (o.pages ? " · صفحات " + esc(o.pages) : "") + (o.tpl ? " · نموذج: " + esc(o.tpl) : "") + '</small>' +
+        (o.instr ? '<small>تعليماتك: ' + esc(o.instr) + '</small>' : "") + '</div>' +
+        '<div class="hbtns"><button type="button" data-act="dl" data-id="' + o.id + '">تحميل</button><button type="button" data-act="rm" data-id="' + o.id + '" class="danger">حذف</button></div></div>';
+    }).join("");
+    try{
+      if(navigator.storage && navigator.storage.estimate){
+        var e = await navigator.storage.estimate();
+        $("hstorage").textContent = "المساحة المستخدمة في المتصفح: " + fmtSize(e.usage || 0) + (e.quota ? " من " + fmtSize(e.quota) : "");
+      }
+    }catch(_){}
+  }
+  $("hlist").addEventListener("click", async function(e){
+    var b = e.target.closest("button[data-act]"); if(!b) return;
+    var id = parseInt(b.getAttribute("data-id"), 10);
+    try{
+      if(b.getAttribute("data-act") === "dl"){
+        var rec = histAll.filter(function(o){ return o.id === id; })[0], buf = await Hist.raw(id);
+        if(!rec || !buf) throw new Error("الملف مش موجود في السجل.");
+        saveBlob(new Blob([buf], {type: rec.mime || "application/octet-stream"}), rec.outName);
+      } else if(confirm("تحذف العملية دي من السجل؟")){ await Hist.del(id); await renderHist(); }
+    }catch(err){ setMsg("❌ " + (err && err.message ? err.message : err), "err"); }
+  });
+  $("hsearch").addEventListener("input", renderHist);
+  $("hclear").addEventListener("click", async function(){
+    if(!histAll.length || !confirm("تمسح السجل كله؟ الملفات المحفوظة هتتمسح.")) return;
+    try{ await Hist.clear(); await renderHist(); }catch(err){ setMsg("❌ " + err.message, "err"); }
+  });
+  $("hbackup").addEventListener("click", async function(){
+    try{
+      await window.__libs; need("JSZip", window.JSZip);
+      var ops = await Hist.list(); if(!ops.length) throw new Error("السجل فاضي، مفيش حاجة تتحفظ.");
+      var z = new JSZip(); z.file("history.json", JSON.stringify(ops));
+      for(var i = 0; i < ops.length; i++){ var buf = await Hist.raw(ops[i].id); if(buf) z.file("files/" + ops[i].id + ".bin", buf); }
+      var d = new Date(), p2 = function(n){ return (n < 10 ? "0" : "") + n; };
+      saveBlob(await z.generateAsync({type: "blob"}), "SiMo-backup-" + d.getFullYear() + p2(d.getMonth() + 1) + p2(d.getDate()) + ".zip");
+      setMsg("✅ النسخة الاحتياطية اتحمّلت (" + ops.length + " عملية).", "ok");
+    }catch(err){ setMsg("❌ " + (err && err.message ? err.message : err), "err"); }
+  });
+  $("hrestore").addEventListener("click", function(){ $("hfile").click(); });
+  $("hfile").addEventListener("change", async function(){
+    var f = $("hfile").files[0]; $("hfile").value = ""; if(!f) return;
+    try{
+      await window.__libs; need("JSZip", window.JSZip);
+      var z = await JSZip.loadAsync(await f.arrayBuffer()), hj = z.file("history.json");
+      if(!hj) throw new Error("الملف ده مش نسخة احتياطية من SiMo Lecture.");
+      var ops = JSON.parse(await hj.async("string")), have = {};
+      (await Hist.list()).forEach(function(o){ have[o.ts + "|" + o.outName] = 1; });
+      var added = 0;
+      for(var i = 0; i < ops.length; i++){
+        var o = ops[i]; if(have[o.ts + "|" + o.outName]) continue;
+        var bf = z.file("files/" + o.id + ".bin"); if(!bf) continue;
+        await Hist.add(o, new Blob([await bf.async("arraybuffer")], {type: o.mime || "application/octet-stream"})); added++;
+      }
+      await renderHist();
+      setMsg("✅ اترجّع " + added + " عملية" + (ops.length - added ? " (و" + (ops.length - added) + " كانوا موجودين)" : "") + ".", "ok");
+    }catch(err){ setMsg("❌ " + (err && err.message ? err.message : err), "err"); }
+  });
+  renderHist();
+
+  /* ---------- المعاينة والتعديل قبل التحميل ---------- */
+  var JOB = null;
+  function fld(k, i, label, val, kind, rtl){
+    var a = ' data-k="' + k + '"' + (i == null ? "" : ' data-i="' + i + '"') + ' lang="' + (rtl ? "ar" : "en") + '" dir="' + (rtl ? "rtl" : "ltr") + '" spellcheck="true"';
+    if(kind === "line") return '<label class="t">' + label + '</label><input type="text"' + a + ' value="' + escA(val) + '">';
+    var rows = Math.min(14, Math.max(2, String(val).split("\n").length + Math.floor(String(val).length / 60)));
+    return '<label class="t">' + label + '</label><textarea rows="' + rows + '"' + a + '>' + esc(val) + '</textarea>';
+  }
+  function pvHtml(job){
+    var rtl = job.rtl, h = "";
+    if(job.mode === "form"){
+      var m = job.lec.meta, objs = m.objectives || FormFill.objectives(m, rtl);
+      h += '<div class="pv">' + fld("topic", null, "موضوع الدرس (Lesson Topic)", m.topic, "line", rtl) + '</div>';
+      h += '<div class="pv">' + fld("objectives", null, "الأهداف (سطر لكل هدف)", objs.join("\n"), "area", rtl) + '</div>';
+      h += '<div class="pv">' + fld("titles", null, "سير الدرس / Lesson View (سطر لكل جزء)", m.titles.join("\n"), "area", rtl) + '</div>';
+      h += '<div class="pv">' + fld("questions", null, "أسئلة التقييم / Evaluation (سطر لكل سؤال)", (m.questions || []).join("\n"), "area", rtl) + '</div>';
+      return h;
+    }
+    h += '<div class="pv">' + fld("title", null, "العنوان", job.lec.title, "line", rtl) + '</div>';
+    job.lec.sections.forEach(function(s, i){
+      h += '<div class="pv"><div class="pvn">القسم ' + (i + 1) + '</div>' + fld("heading", i, "العنوان", s.heading, "line", rtl);
+      if(s.body) h += fld("body", i, "الفقرة", s.body, "area", rtl);
+      if((s.bullets || []).length) h += fld("bullets", i, "النقاط (سطر لكل نقطة)", s.bullets.join("\n"), "area", rtl);
+      if(s.notes) h += fld("notes", i, "ملاحظات", s.notes, "area", rtl);
+      h += '</div>';
+    });
+    return h;
+  }
+  function lines(v){ return String(v).split("\n").map(function(x){ return x.trim(); }).filter(Boolean); }
+  function collect(job){
+    var q = function(k, i){ return document.querySelector('#pvbody [data-k="' + k + '"]' + (i == null ? "" : '[data-i="' + i + '"]')); };
+    if(job.mode === "form"){
+      var m = job.lec.meta;
+      m.topic = q("topic").value.trim(); m.objectives = lines(q("objectives").value);
+      m.titles = lines(q("titles").value); m.questions = lines(q("questions").value);
+      return;
+    }
+    job.lec.title = q("title").value.trim();
+    job.lec.sections.forEach(function(s, i){
+      s.heading = q("heading", i).value.trim();
+      var b = q("body", i); if(b) s.body = b.value.trim();
+      var bl = q("bullets", i); if(bl) s.bullets = lines(bl.value);
+      var n = q("notes", i); if(n) s.notes = n.value.trim();
+    });
+  }
+  function pvFields(){ return Array.prototype.slice.call(document.querySelectorAll("#pvbody input, #pvbody textarea")); }
+  function renderLangReport(){
+    var box = $("pvlang"), html = "";
+    var fx = JOB.fix;
+    if(fx && fx.count) html += '<div class="okbox">✔ اتصلّح تلقائي ' + fx.count + ' خطأ بسيط: ' + esc(Lang.describe(fx.details).join(" · ")) + '</div>';
+    else if(JOB.autofix) html += '<div class="okbox">✔ مفيش أخطاء بسيطة اتصلّحت.</div>';
+    var sug = Lang.suggest(pvFields().map(function(f){ return f.value; }));
+    JOB.sug = sug;
+    if(sug.length){
+      html += '<div class="warnbox"><b>كلمات مشتبه فيها (' + sug.length + ')</b> — راجعها وطبّقها لو صح:' +
+        sug.map(function(s, i){ return '<div class="srow"><span><s>' + esc(s.wrong) + '</s> ← <b>' + esc(s.right) + '</b>' + (s.count > 1 ? ' (×' + s.count + ')' : '') + '</span><button type="button" data-sug="' + i + '">طبّق</button></div>'; }).join("") +
+        '<button type="button" id="sugall" class="link">طبّق الكل</button></div>';
+    } else html += '<div class="okbox">✔ مفيش كلمات مشتبه فيها من القايمة اللي أعرفها. المتصفح كمان بيحط خط أحمر تحت الغلط في الخانات.</div>';
+    box.innerHTML = html;
+  }
+  function applySug(list){
+    list.forEach(function(s){ pvFields().forEach(function(f){ f.value = Lang.replaceAll(f.value, s.wrong, s.right); }); });
+    renderLangReport();
+  }
+  $("pvlang").addEventListener("click", function(e){
+    var b = e.target.closest("button"); if(!b || !JOB) return;
+    if(b.id === "sugall") applySug(JOB.sug.slice());
+    else if(b.hasAttribute("data-sug")) applySug([JOB.sug[parseInt(b.getAttribute("data-sug"), 10)]]);
+  });
+  $("pvscan").addEventListener("click", function(){ if(JOB) renderLangReport(); });
+  function showForm(){ $("preview").hidden = true; $("f").hidden = false; JOB = null; window.scrollTo(0, 0); }
+  function showPreview(job){
+    JOB = job; job.pv = true;
+    $("pvbody").innerHTML = pvHtml(job);
+    $("f").hidden = true; $("preview").hidden = false;
+    renderLangReport(); window.scrollTo(0, 0);
+  }
+  $("pvback").addEventListener("click", function(){ showForm(); setMsg(""); });
+  $("pvgo").addEventListener("click", async function(){
+    if(!JOB) return;
+    var b = $("pvgo"); b.disabled = true;
+    try{ var job = JOB; collect(job); await finalize(job); showForm(); }
+    catch(err){ setMsg("❌ " + (err && err.message ? err.message : err), "err"); }
+    b.disabled = false;
+  });
+
+  /* ---------- إنتاج الملف + حفظه في السجل ---------- */
+  async function finalize(job){
+    var out, kind = job.fmt, parts = "";
+    setMsg("⏳ بجهّز الملف...");
+    if(job.mode === "form"){
+      var res = FormFill.fill(job.formXml, job.lec.meta, job.rtl);
+      if(!res.filled) throw new Error("ما لقيتش خانات أعرف أملاها في النموذج.");
+      job.formZip.file("word/document.xml", res.xml);
+      var blob = await job.formZip.generateAsync({type: "blob", mimeType: DOCX_MIME, compression: "DEFLATE"});
+      out = {blob: blob, name: safeName("خطة - " + job.lec.meta.topic) + ".docx"};
+      kind = "form"; parts = "النموذج اتملا (" + res.filled + " خانات)، الأشكال والجداول زي ما هي";
+    } else {
+      out = job.fmt === "docx" ? await buildDocx(job.lec, job.rtl) : job.fmt === "pptx" ? await buildPptx(job.lec, job.rtl) : await buildPdf(job.lec, job.rtl);
+      parts = job.lec.sections.length + " قسم" + (job.tpl ? (job.lec.templateUsed ? " (على عناوين النموذج)" : " (النموذج ملوش عناوين واضحة، استخدمت الهيكل العام)") : "");
+    }
+    saveBlob(out.blob, out.name);
+    var logged = true;
+    try{
+      await Hist.add({ts: Date.now(), title: job.mode === "form" ? job.lec.meta.topic : job.lec.title, fmt: job.fmt, kind: kind, outName: out.name,
+        files: job.files, pages: job.pages, instr: job.instr, tpl: job.tpl}, out.blob);
+      try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); }catch(_){}
+      await renderHist();
+    }catch(e){ logged = false; }
+    var extra = "";
+    if(!job.pv){
+      var sug = Lang.suggest(job.mode === "form" ? [job.lec.meta.topic].concat(job.lec.meta.titles, job.lec.meta.questions || []) :
+        [job.lec.title].concat.apply([], job.lec.sections.map(function(s){ return [s.heading, s.body, s.notes].concat(s.bullets || []); })));
+      if(sug.length) extra = " · فيه " + sug.length + " كلمة مشتبه فيها (فعّل المعاينة عشان تراجعها)";
+    }
+    var fx = job.fix && job.fix.count ? " · اتصلّح " + job.fix.count + " خطأ بسيط" : "";
+    setMsg("✅ تم! الملف اتحمّل · " + parts + fx + extra + (logged ? " · اتسجّل في السجل" : " · (السجل مش متاح على المتصفح ده)"), "ok");
   }
 
   /* ---------- التشغيل ---------- */
@@ -835,27 +1257,19 @@ var FormFill = (function(){
       }
 
       setMsg("⏳ بحضّر المحاضرة...");
+      var pagesStr = (range.from || range.to) ? (range.from || 1) + "–" + (range.to || "") : "";
       var lec = Engine.build(alltext, {
         instr: $("instr").value, fmt: fmt, rtl: rtl, tplText: tplText,
         fileTitle: baseName(files[0].name),
-        subtitle: (rtl ? "المصدر: " : "Source: ") + files.map(function(f){ return f.name; }).join(rtl ? "، " : ", ") + ((range.from || range.to) ? (rtl ? " (صفحات " : " (pages ") + (range.from || 1) + "–" + (range.to || "") + ")" : "")
+        subtitle: (rtl ? "المصدر: " : "Source: ") + files.map(function(f){ return f.name; }).join(rtl ? "، " : ", ") + (pagesStr ? (rtl ? " (صفحات " : " (pages ") + pagesStr + ")" : "")
       });
+      var job = {mode: formZip ? "form" : "doc", lec: lec, rtl: rtl, fmt: fmt, formZip: formZip, formXml: formXml,
+        files: files.map(function(f){ return f.name; }), pages: pagesStr, instr: $("instr").value.trim(), tpl: tf ? tf.name : "",
+        autofix: $("autofix").checked, fix: null, pv: false};
+      if(job.autofix) job.fix = job.mode === "form" ? Lang.fixMeta(lec.meta) : Lang.fixLec(lec);
 
-      setMsg("⏳ بجهّز الملف...");
-      if(formZip){
-        var res = FormFill.fill(formXml, lec.meta, rtl);
-        if(!res.filled) throw new Error("ما لقيتش خانات أعرف أملاها في النموذج.");
-        formZip.file("word/document.xml", res.xml);
-        var blob = await formZip.generateAsync({type: "blob", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", compression: "DEFLATE"});
-        saveBlob(blob, safeName("خطة - " + lec.meta.topic) + ".docx");
-        setMsg("✅ تم! النموذج اتملا واتحمّل (" + res.filled + " خانات) · الأشكال والجداول زي ما هي.", "ok");
-        go.disabled = false; return;
-      }
-      if(fmt === "docx") await buildDocx(lec, rtl);
-      else if(fmt === "pptx") await buildPptx(lec, rtl);
-      else await buildPdf(lec, rtl);
-      var note = tf ? (lec.templateUsed ? " (على عناوين النموذج)" : " (النموذج ملوش عناوين واضحة، استخدمت الهيكل العام)") : "";
-      setMsg("✅ تم! الملف اتحمّل · " + lec.sections.length + " قسم" + note, "ok");
+      if($("pvon").checked){ setMsg(""); showPreview(job); }
+      else await finalize(job);
     }catch(err){
       setMsg("❌ " + (err && err.message ? err.message : err), "err");
     }
