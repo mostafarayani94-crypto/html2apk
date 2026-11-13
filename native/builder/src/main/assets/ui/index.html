@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>محوّل HTML إلى APK</title>
+<style>
+:root{--bg:#020617;--card:#0f172a;--line:#1e293b;--tx:#e2e8f0;--mut:#94a3b8;--pri:#6366f1;--ok:#34d399;--bad:#f87171}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.6 system-ui,Tahoma,sans-serif;padding:16px;padding-bottom:48px}
+main{max-width:560px;margin:0 auto;display:grid;gap:14px}
+h1{margin:6px 0 0;font-size:22px}.sub{margin:0;color:var(--mut);font-size:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;display:grid;gap:10px}
+.card h2{margin:0;font-size:16px}
+label{font-size:13px;color:var(--mut);display:grid;gap:4px}
+input,textarea,select{width:100%;background:var(--bg);color:var(--tx);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit;min-height:44px}
+input[type=checkbox]{width:auto;min-height:0}input[type=color]{padding:2px;height:44px}
+textarea{direction:ltr;text-align:left;min-height:160px;font:13px/1.5 monospace}
+button{font:inherit;border:0;border-radius:12px;padding:12px 16px;min-height:46px;cursor:pointer;background:var(--pri);color:#fff;font-weight:600}
+button.ghost{background:transparent;border:1px solid var(--line);color:var(--tx)}
+button:disabled{opacity:.5}
+.seg{display:flex;gap:6px;flex-wrap:wrap}.seg button{background:transparent;border:1px solid var(--line);color:var(--tx);padding:8px 12px;min-height:40px;font-weight:500}.seg button.on{background:var(--pri);border-color:var(--pri)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.opts{display:grid;gap:8px}
+.chk{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--tx)}
+.hint{font-size:12.5px;color:var(--mut);margin:0}.file{font-size:13px;color:var(--ok);word-break:break-all}
+#msg{font-size:14px;min-height:20px}.bad{color:var(--bad)}.ok{color:var(--ok)}
+code{direction:ltr;unicode-bidi:embed;background:var(--bg);padding:1px 6px;border-radius:6px;font-size:13px}
+.big{padding:16px;font-size:17px}
+</style>
+</head>
+<body>
+<main>
+  <div><h1>📦 محوّل HTML إلى APK</h1><p class="sub">اختار ملف HTML واكتب الاسم، والتطبيق يتبني ويتثبّت على الموبايل. من غير إنترنت ولا علامة مائية.</p></div>
+
+  <section class="card">
+    <h2>1) مصدر التطبيق</h2>
+    <div class="seg" id="srcSeg">
+      <button data-s="html" class="on">ملف HTML</button><button data-s="zip">ZIP</button><button data-s="editor">محرر</button><button data-s="url">رابط موقع</button>
+    </div>
+    <div data-pane="html"><button class="ghost" id="pickHtml">اختيار ملف HTML</button><p class="file" id="htmlName"></p></div>
+    <div data-pane="zip" hidden><button class="ghost" id="pickZip">اختيار ملف ZIP</button><p class="file" id="zipName"></p><p class="hint">لازم فيه <code>index.html</code>. الصور والخطوط وCSS وJS كلها بتتضمن.</p></div>
+    <div data-pane="editor" hidden><label>الصق كود HTML<textarea id="code" spellcheck="false"></textarea></label></div>
+    <div data-pane="url" hidden><label>الرابط (https)<input id="url" dir="ltr" placeholder="https://example.com" autocapitalize="off"></label><p class="hint">التطبيق هيفتح الموقع ومحتاج إنترنت. جسر الجهاز بيتقفل في الوضع ده لأمانك.</p></div>
+  </section>
+
+  <section class="card">
+    <h2>2) بيانات التطبيق</h2>
+    <label>اسم التطبيق<input id="name" maxlength="40" placeholder="حاسبتي"></label>
+    <p class="hint">معرّف الحزمة: <code id="pkg">—</code> (بيتحدد تلقائياً ويفضل ثابت للتطبيق عشان التحديثات)</p>
+    <div class="grid2">
+      <label>رقم الإصدار<input id="ver" dir="ltr" value="1.0"></label>
+      <label>الأيقونة (اختياري)<button class="ghost" id="pickIcon" type="button">اختيار صورة</button></label>
+    </div>
+    <p class="file" id="iconName"></p>
+  </section>
+
+  <section class="card">
+    <h2>3) الشكل والسلوك</h2>
+    <div class="grid2">
+      <label>اتجاه الشاشة<select id="orient"><option value="auto">تلقائي</option><option value="portrait">رأسي</option><option value="landscape">أفقي</option></select></label>
+      <label>لون الخلفية<input id="bg" type="color" value="#ffffff"></label>
+    </div>
+    <div class="opts">
+      <label class="chk"><input type="checkbox" id="fullscreen"> ملء الشاشة</label>
+      <label class="chk"><input type="checkbox" id="keepOn"> إبقاء الشاشة شغالة</label>
+      <label class="chk"><input type="checkbox" id="desktop"> وضع سطح المكتب</label>
+      <label class="chk"><input type="checkbox" id="mixed"> السماح بمحتوى مختلط</label>
+      <label class="chk"><input type="checkbox" id="downloads" checked> مدير التنزيلات</label>
+      <label class="chk"><input type="checkbox" id="bridge" checked> جسر الجهاز <code>AndroidAPI</code> (اهتزاز، فلاش، مشاركة…)</label>
+    </div>
+    <label>الكاش<select id="cache"><option value="default">افتراضي</option><option value="noCache">من غير كاش</option><option value="cacheElseNetwork">الكاش أولاً</option></select></label>
+    <div class="opts"><span class="hint">الصلاحيات المطلوبة:</span>
+      <label class="chk"><input type="checkbox" data-perm="camera"> كاميرا</label>
+      <label class="chk"><input type="checkbox" data-perm="microphone"> ميكروفون</label>
+      <label class="chk"><input type="checkbox" data-perm="location"> الموقع GPS</label>
+    </div>
+  </section>
+
+  <button class="big" id="go">ابنِ التطبيق</button>
+
+  <section class="card" id="prog" hidden>
+    <h2>التقدّم</h2>
+    <div id="msg" role="status"></div>
+    <button id="install" hidden class="big">تثبيت التطبيق</button>
+    <button id="allow" hidden class="ghost">السماح بالتثبيت من هذا التطبيق (مرة واحدة)</button>
+    <button id="save" hidden class="ghost">حفظ الـ APK في التنزيلات</button>
+  </section>
+
+  <section class="card">
+    <h2>نسخة احتياطية للمفتاح</h2>
+    <p class="hint">كل تطبيقاتك بتتوقّع بنفس المفتاح، وده اللي بيخلّي التحديث يتثبّت فوق القديم. لو مسحت هذا التطبيق من غير نسخة، مش هتقدر تحدّث التطبيقات اللي بنيتها. احفظ النسخة في مكان آمن ولا تشاركها.</p>
+    <div class="grid2"><button class="ghost" id="expKey">حفظ نسخة</button><button class="ghost" id="impKey">استيراد نسخة</button></div>
+  </section>
+</main>
+<script>
+(function () {
+  'use strict';
+  var $ = function (s) { return document.querySelector(s); };
+  var N = window.Native, source = 'html', picked = { html: null, zip: null, icon: null };
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem('h2a_ui') || '{}') || {}; } catch (e) {}
+  if (saved.name) { $('#name').value = saved.name; }
+  function pkg() { var n = $('#name').value.trim(); $('#pkg').textContent = n ? N.appIdFor(n) : '—'; }
+  $('#name').addEventListener('input', pkg); pkg();
+
+  function setSource(v) {
+    source = v;
+    document.querySelectorAll('#srcSeg button').forEach(function (b) { b.classList.toggle('on', b.dataset.s === v); });
+    document.querySelectorAll('[data-pane]').forEach(function (d) { d.hidden = d.dataset.pane !== v; });
+  }
+  document.querySelectorAll('#srcSeg button').forEach(function (b) { b.addEventListener('click', function () { setSource(b.dataset.s); }); });
+  $('#pickHtml').addEventListener('click', function () { N.pick('html'); });
+  $('#pickZip').addEventListener('click', function () { N.pick('zip'); });
+  $('#pickIcon').addEventListener('click', function () { N.pick('icon'); });
+  $('#expKey').addEventListener('click', function () { N.exportKey(); });
+  $('#impKey').addEventListener('click', function () { N.importKey(); });
+
+  window.onPicked = function (r) {
+    if (r.cancel) return;
+    if (r.error) { alert('تعذّر قراءة الملف: ' + r.error); return; }
+    if (r.kind === 'key') { N.applyKey(); return; }
+    picked[r.kind] = r.name;
+    var el = { html: '#htmlName', zip: '#zipName', icon: '#iconName' }[r.kind];
+    if (el) $(el).textContent = '✓ ' + r.name + ' (' + Math.round(r.size / 1024) + ' KB)';
+    if (r.kind === 'html' && !$('#name').value) { $('#name').value = r.name.replace(/\.html?$/i, '').slice(0, 40); pkg(); }
+    if (r.kind === 'zip' && !$('#name').value) { $('#name').value = r.name.replace(/\.zip$/i, '').slice(0, 40); pkg(); }
+  };
+
+  function msg(t, c) { var m = $('#msg'); m.textContent = t; m.className = c || ''; }
+  window.onProgress = function (t) { msg(t, ''); };
+
+  $('#go').addEventListener('click', function () {
+    var name = $('#name').value.trim();
+    $('#prog').hidden = false; ['install', 'allow', 'save'].forEach(function (i) { $('#' + i).hidden = true; });
+    if (!name) return msg('اكتب اسم التطبيق.', 'bad');
+    if (source === 'html' && !picked.html) return msg('اختار ملف HTML.', 'bad');
+    if (source === 'zip' && !picked.zip) return msg('اختار ملف ZIP.', 'bad');
+    if (source === 'editor' && !$('#code').value.trim()) return msg('المحرر فاضي.', 'bad');
+    if (source === 'url' && !/^https:\/\/.+/i.test($('#url').value.trim())) return msg('الرابط لازم يبدأ بـ https://', 'bad');
+    try { localStorage.setItem('h2a_ui', JSON.stringify({ name: name })); } catch (e) {}
+    $('#go').disabled = true; msg('جاري البناء…', '');
+    var perms = Array.prototype.map.call(document.querySelectorAll('[data-perm]:checked'), function (x) { return x.dataset.perm; });
+    N.build(JSON.stringify({
+      appName: name, source: source, url: $('#url').value.trim(), code: $('#code').value, versionName: $('#ver').value.trim() || '1.0',
+      orientation: $('#orient').value, backgroundColor: $('#bg').value, fullscreen: $('#fullscreen').checked, keepScreenOn: $('#keepOn').checked,
+      desktopMode: $('#desktop').checked, allowMixedContent: $('#mixed').checked, downloads: $('#downloads').checked, bridge: $('#bridge').checked,
+      cacheMode: $('#cache').value, permissions: perms, useIcon: !!picked.icon
+    }));
+  });
+
+  window.onBuilt = function (r) {
+    $('#go').disabled = false;
+    if (!r.ok) return msg('فشل البناء: ' + r.msg, 'bad');
+    msg('✓ جاهز (' + Math.round(r.size / 1024) + ' KB). اضغط تثبيت.' + (r.warn ? ' تنبيه: ' + r.warn : ''), 'ok');
+    $('#save').hidden = false;
+    if (N.canInstall()) $('#install').hidden = false; else { $('#allow').hidden = false; $('#install').hidden = false; }
+  };
+  $('#install').addEventListener('click', function () { if (!N.canInstall()) { msg('اسمح بالتثبيت الأول (الزرار اللي تحت)، وارجع واضغط تثبيت.', 'bad'); return; } msg('جاري التثبيت…', ''); N.install(); });
+  $('#allow').addEventListener('click', function () { N.allowInstall(); });
+  $('#save').addEventListener('click', function () { N.saveApk(); });
+  window.onInstall = function (r) { if (r.ok) msg('✓ تم التثبيت. افتح التطبيق من الشاشة الرئيسية.', 'ok'); else msg('التثبيت ما تمش: ' + (r.msg || ''), 'bad'); };
+})();
+</script>
+</body>
+</html>
