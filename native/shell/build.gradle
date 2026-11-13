@@ -1,0 +1,20 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'com.h2a.shell'
+    compileSdk 34
+    defaultConfig {
+        // القيم دي placeholders: التطبيق الباني بيبدّلها جوه الـ APK (الاسم، الحزمة، الإصدار)
+        applicationId 'com.h2a.placeholder'
+        minSdk 24
+        targetSdk 28
+        versionCode 1
+        versionName '0.0.0-h2a'
+    }
+    buildTypes { release { minifyEnabled false } }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    lint { abortOnError false; checkReleaseBuilds false }
+}
