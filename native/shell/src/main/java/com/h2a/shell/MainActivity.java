@@ -10,6 +10,7 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
@@ -25,6 +26,9 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.ProgressBar;
+import android.widget.TextView;
+import android.view.Gravity;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.io.ByteArrayOutputStream;
@@ -43,6 +47,10 @@ public class MainActivity extends Activity {
     private GeolocationPermissions.Callback pendingGeo;
     private String pendingGeoOrigin;
     private boolean fullscreen;
+    private ProgressBar bar;
+    private TextView pullHint;
+    private float pullStartY = -1, pullDy;
+    private String lastUrl = "";
 
     private String readAsset(String name) {
         try {
@@ -84,6 +92,20 @@ public class MainActivity extends Activity {
         web = new WebView(this);
         web.setBackgroundColor(bg);
         root.addView(web, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        bar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+        bar.setMax(100);
+        bar.setVisibility(View.GONE);
+        root.addView(bar, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) (3 * getResources().getDisplayMetrics().density)));
+        pullHint = new TextView(this);
+        pullHint.setText("\u21BB");
+        pullHint.setTextSize(22);
+        pullHint.setTextColor(Color.WHITE);
+        pullHint.setGravity(Gravity.CENTER);
+        pullHint.setBackgroundColor(0xCC334155);
+        pullHint.setVisibility(View.GONE);
+        FrameLayout.LayoutParams plp = new FrameLayout.LayoutParams((int) (44 * getResources().getDisplayMetrics().density), (int) (44 * getResources().getDisplayMetrics().density));
+        plp.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+        root.addView(pullHint, plp);
         setContentView(root);
         applyFullscreen();
 
@@ -110,6 +132,11 @@ public class MainActivity extends Activity {
 
         String url = cfg.optString("url", "");
         boolean remote = url.startsWith("https://");
+        if (!remote) { // ملفات التطبيق نفسه: نسمح بـ fetch/XHR/modules على الملفات المحلية
+            s.setAllowFileAccessFromFileURLs(true);
+            s.setAllowUniversalAccessFromFileURLs(true);
+        }
+        if (cfg.optBoolean("pullToRefresh", false)) setupPullToRefresh();
         boolean wantBridge = cfg.optBoolean("bridge", true) && !remote; // أمان: مفيش جسر لموقع خارجي
         boolean wantDownloads = cfg.optBoolean("downloads", true);
         if (wantBridge || wantDownloads) {
@@ -119,6 +146,13 @@ public class MainActivity extends Activity {
         }
 
         web.setWebViewClient(new WebViewClient() {
+            @Override public void onPageFinished(WebView v, String u) { bar.setVisibility(View.GONE); }
+            @Override public void onReceivedError(WebView v, WebResourceRequest r, android.webkit.WebResourceError e) {
+                if (r.isForMainFrame()) {
+                    lastUrl = r.getUrl().toString();
+                    v.loadDataWithBaseURL(null, "<meta name=viewport content='width=device-width,initial-scale=1'><body style='font-family:sans-serif;text-align:center;padding:48px 20px;background:#f8fafc;color:#0f172a'><div style='font-size:56px'>\uD83D\uDCE1</div><h2>\u062A\u0639\u0630\u0651\u0631 \u0627\u0644\u0627\u062A\u0635\u0627\u0644</h2><p style='color:#64748b'>\u062A\u0623\u0643\u062F \u0645\u0646 \u0627\u0644\u0625\u0646\u062A\u0631\u0646\u062A \u0648\u0627\u0636\u063A\u0637 \u0625\u0639\u0627\u062F\u0629 \u0627\u0644\u0645\u062D\u0627\u0648\u0644\u0629</p><button onclick=\"location.href=" + JSONObject.quote(lastUrl).replace("\"", "&quot;") + "\" style='font-size:18px;padding:12px 28px;border:0;border-radius:12px;background:#4f46e5;color:#fff'>\u0625\u0639\u0627\u062F\u0629 \u0627\u0644\u0645\u062D\u0627\u0648\u0644\u0629</button></body>", "text/html", "UTF-8", null);
+                }
+            }
             @Override
             public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest r) {
                 String u = r.getUrl().toString();
@@ -129,6 +163,7 @@ public class MainActivity extends Activity {
             }
         });
         web.setWebChromeClient(new WebChromeClient() {
+            @Override public void onProgressChanged(WebView v, int p) { bar.setProgress(p); bar.setVisibility(p < 100 ? View.VISIBLE : View.GONE); }
             @Override public boolean onJsAlert(WebView v, String u, String m, final JsResult r) {
                 new AlertDialog.Builder(MainActivity.this).setMessage(m).setCancelable(false)
                     .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() { public void onClick(DialogInterface d, int w) { r.confirm(); } }).show();
@@ -183,6 +218,29 @@ public class MainActivity extends Activity {
 
         if (savedInstanceState != null) web.restoreState(savedInstanceState);
         else web.loadUrl(remote ? url : "file:///android_asset/www/index.html");
+    }
+
+    /** سحب للتحديث: بس لما الصفحة في أولها. بيشتغل بدون ما يمنع أي لمس عادي. */
+    private void setupPullToRefresh() {
+        final float trigger = 110 * getResources().getDisplayMetrics().density;
+        web.setOnTouchListener(new View.OnTouchListener() {
+            @Override public boolean onTouch(View v, MotionEvent e) {
+                switch (e.getActionMasked()) {
+                    case MotionEvent.ACTION_DOWN: pullStartY = web.getScrollY() == 0 ? e.getY() : -1; pullDy = 0; break;
+                    case MotionEvent.ACTION_MOVE:
+                        if (pullStartY >= 0) {
+                            pullDy = e.getY() - pullStartY;
+                            if (web.getScrollY() != 0) { pullStartY = -1; pullHint.setVisibility(View.GONE); break; }
+                            if (pullDy > 24) { pullHint.setVisibility(View.VISIBLE); pullHint.setTranslationY(Math.min(pullDy, trigger) * 0.6f); pullHint.setAlpha(Math.min(1f, pullDy / trigger)); }
+                        }
+                        break;
+                    case MotionEvent.ACTION_UP: case MotionEvent.ACTION_CANCEL:
+                        if (pullStartY >= 0 && pullDy >= trigger && e.getActionMasked() == MotionEvent.ACTION_UP) web.reload();
+                        pullStartY = -1; pullDy = 0; pullHint.setVisibility(View.GONE); break;
+                }
+                return false;
+            }
+        });
     }
 
     private void handleWebPerm(PermissionRequest req) {
