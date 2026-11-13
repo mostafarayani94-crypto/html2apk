@@ -7,7 +7,7 @@ android {
         // القيم دي placeholders: التطبيق الباني بيبدّلها جوه الـ APK (الاسم، الحزمة، الإصدار)
         applicationId 'com.h2a.placeholder'
         minSdk 24
-        targetSdk 28
+        targetSdk 34
         versionCode 1
         versionName '0.0.0-h2a'
     }
