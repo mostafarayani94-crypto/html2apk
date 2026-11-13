@@ -87,6 +87,15 @@ public class CoreTest {
         return m;
     }
 
+    static byte[] fakePng(int w) {
+        byte[] b = new byte[60];
+        b[0] = (byte) 0x89; b[1] = 'P'; b[2] = 'N'; b[3] = 'G';
+        b[16] = 0; b[17] = 0; b[18] = (byte) (w >> 8); b[19] = (byte) w;
+        byte[] m = "h2a-icon-marker".getBytes();
+        System.arraycopy(m, 0, b, 30, m.length);
+        return b;
+    }
+
     public static void main(String[] args) throws Exception {
         String[] strs = {"manifest", "package", "versionCode", "versionName", "application", "label", ApkBuilder.PKG_PLACEHOLDER, ApkBuilder.VERSION_PLACEHOLDER, ApkBuilder.LABEL_PLACEHOLDER, "android.permission.INTERNET"};
         for (boolean utf8 : new boolean[]{false, true}) {
@@ -116,8 +125,9 @@ public class CoreTest {
         tpl.put("AndroidManifest.xml", axml(false, strs));
         tpl.put("classes.dex", new byte[]{1, 2, 3});
         tpl.put("resources.arsc", new byte[]{9, 9, 9, 9});
-        tpl.put("res/mipmap-hdpi-v4/ic_launcher.png", new byte[]{7});
-        tpl.put("res/mipmap-xxxhdpi-v4/ic_launcher.png", new byte[]{7});
+        tpl.put("res/mipmap-hdpi-v4/ic_launcher.png", fakePng(72));
+        tpl.put("res/Xy.png", fakePng(192));   // مسار متشفّر زي AGP
+        tpl.put("res/drawable/other.png", new byte[]{7});   // مش أيقونة: لازم يفضل زي ما هو
         tpl.put("META-INF/CERT.SF", new byte[]{1}); tpl.put("META-INF/CERT.RSA", new byte[]{1}); tpl.put("META-INF/MANIFEST.MF", new byte[]{1}); tpl.put("META-INF/com/android/build/gradle/app-metadata.properties", new byte[]{1});
         File template = zipOf(new File(dir, "template.apk"), tpl);
 
@@ -134,7 +144,7 @@ public class CoreTest {
         check(r.containsKey("META-INF/com/android/build/gradle/app-metadata.properties"), "باقي META-INF");
         check(new String(r.get("assets/www/index.html"), "UTF-8").equals("<h1>مرحبا</h1>"), "HTML");
         check(AxmlPatcher.readStrings(r.get("AndroidManifest.xml")).contains("com.h2a.app1") && versionCodeOf(r.get("AndroidManifest.xml")) == 5, "manifest");
-        check(r.get("res/mipmap-hdpi-v4/ic_launcher.png")[0] == 72 && r.get("res/mipmap-xxxhdpi-v4/ic_launcher.png")[0] == (byte) 192, "أحجام الأيقونات " + sizes);
+        check(r.get("res/mipmap-hdpi-v4/ic_launcher.png")[0] == 72 && r.get("res/Xy.png")[0] == (byte) 192 && r.get("res/drawable/other.png")[0] == 7 && sp.iconsReplaced == 2, "أحجام الأيقونات " + sizes);
         ZipFile zf = new ZipFile(out); check(zf.getEntry("resources.arsc").getMethod() == ZipEntry.STORED, "resources.arsc غير مضغوط"); zf.close();
 
         // ZIP: مجلد واحد في الجذر + حماية
