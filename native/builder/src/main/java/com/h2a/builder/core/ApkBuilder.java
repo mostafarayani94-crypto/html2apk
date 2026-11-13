@@ -46,7 +46,8 @@ public final class ApkBuilder {
 
         Set<String> written = new HashSet<String>();
         ZipFile in = new ZipFile(template);
-        ZipOutputStream zo = new ZipOutputStream(new FileOutputStream(out));
+        CountingOut counter = new CountingOut(new java.io.BufferedOutputStream(new FileOutputStream(out)));
+        ZipOutputStream zo = new ZipOutputStream(counter);
         try {
             Enumeration<? extends ZipEntry> en = in.entries();
             while (en.hasMoreElements()) {
@@ -66,13 +67,13 @@ public final class ApkBuilder {
                     bytes = spec.icons.png(px > 0 ? px : iconSize(name));
                     spec.iconsReplaced++;
                 }
-                put(zo, name, bytes, name.equals("resources.arsc") || name.endsWith(".png") || name.endsWith(".so"));
+                put(zo, counter, name, bytes, name.equals("resources.arsc") || name.endsWith(".png") || name.endsWith(".so"));
                 written.add(name);
             }
-            put(zo, "assets/config.json", spec.configJson.getBytes("UTF-8"), false);
+            put(zo, counter, "assets/config.json", spec.configJson.getBytes("UTF-8"), false);
             if (!spec.remote) {
-                if (spec.html != null) put(zo, "assets/www/index.html", readAll(new java.io.FileInputStream(spec.html)), false);
-                else addSite(zo, spec.zip);
+                if (spec.html != null) put(zo, counter, "assets/www/index.html", readAll(new java.io.FileInputStream(spec.html)), false);
+                else addSite(zo, counter, spec.zip);
             }
         } finally {
             zo.close();
@@ -107,7 +108,7 @@ public final class ApkBuilder {
     }
 
     /** بيضيف محتوى الـ ZIP تحت assets/www مع حماية: مسارات آمنة، index.html لازم يتواجد، وحد أقصى للحجم. */
-    private static void addSite(ZipOutputStream zo, File zip) throws IOException {
+    private static void addSite(ZipOutputStream zo, CountingOut counter, File zip) throws IOException {
         ZipFile z = new ZipFile(zip);
         try {
             // حدد فولدر الجذر لو كل حاجة جواه
@@ -139,7 +140,7 @@ public final class ApkBuilder {
                 byte[] b = readLimited(z.getInputStream(e), MAX_UNPACKED - total);
                 total += b.length;
                 if (!seen.add(rel)) continue;
-                put(zo, "assets/www/" + rel, b, false);
+                put(zo, counter, "assets/www/" + rel, b, false);
             }
         } finally { z.close(); }
     }
@@ -151,7 +152,16 @@ public final class ApkBuilder {
         return name;
     }
 
-    private static void put(ZipOutputStream zo, String name, byte[] bytes, boolean store) throws IOException {
+    /** بيعدّ البايتات اللي اتكتبت فعلاً، عشان نعرف مكان بداية بيانات كل ملف ونحاذيه. */
+    static final class CountingOut extends java.io.FilterOutputStream {
+        long count;
+        CountingOut(OutputStream o) { super(o); }
+        @Override public void write(int b) throws IOException { out.write(b); count++; }
+        @Override public void write(byte[] b, int off, int len) throws IOException { out.write(b, off, len); count += len; }
+    }
+
+    /** الملفات غير المضغوطة (STORED) لازم بياناتها تبدأ على حدود 4 بايت (شرط أندرويد 11+ لـ resources.arsc). */
+    private static void put(ZipOutputStream zo, CountingOut counter, String name, byte[] bytes, boolean store) throws IOException {
         ZipEntry ze = new ZipEntry(name);
         if (store) {
             CRC32 crc = new CRC32();
@@ -160,11 +170,59 @@ public final class ApkBuilder {
             ze.setSize(bytes.length);
             ze.setCompressedSize(bytes.length);
             ze.setCrc(crc.getValue());
+            int nameLen = name.getBytes("UTF-8").length;
+            int pad = (int) ((4 - ((counter.count + 30 + nameLen) % 4)) % 4);
+            if (pad > 0) ze.setExtra(new byte[pad]);
         }
         zo.putNextEntry(ze);
         zo.write(bytes);
         zo.closeEntry();
     }
+
+    /**
+     * فحص نهائي للـ APK: resources.arsc لازم يكون غير مضغوط وبياناته على حدود 4 بايت، وإلا أندرويد 11+ هيرفض التثبيت.
+     * بيرمي IOException برسالة واضحة. بيقرا الـ central directory بنفسه (Java نقية).
+     */
+    public static void checkAligned(File apk) throws IOException {
+        java.io.RandomAccessFile f = new java.io.RandomAccessFile(apk, "r");
+        try {
+            long len = f.length();
+            int tail = (int) Math.min(len, 65557);
+            byte[] t = new byte[tail];
+            f.seek(len - tail);
+            f.readFully(t);
+            int e = -1;
+            for (int i = tail - 22; i >= 0; i--) if (t[i] == 0x50 && t[i + 1] == 0x4b && t[i + 2] == 5 && t[i + 3] == 6) { e = i; break; }
+            if (e < 0) throw new IOException("الـ APK تالف (مفيش central directory)");
+            int count = le16(t, e + 10);
+            long cdOff = le32(t, e + 16);
+            f.seek(cdOff);
+            for (int i = 0; i < count; i++) {
+                byte[] h = new byte[46];
+                f.readFully(h);
+                int method = le16(h, 10), nameLen = le16(h, 28), extraLen = le16(h, 30), cmtLen = le16(h, 32);
+                long lho = le32(h, 42);
+                byte[] nb = new byte[nameLen];
+                f.readFully(nb);
+                f.skipBytes(extraLen + cmtLen);
+                if ("resources.arsc".equals(new String(nb, "UTF-8"))) {
+                    if (method != 0) throw new IOException("resources.arsc مضغوط (لازم يكون غير مضغوط لأندرويد 11+)");
+                    long here = f.getFilePointer();
+                    byte[] l = new byte[30];
+                    f.seek(lho);
+                    f.readFully(l);
+                    long data = lho + 30 + le16(l, 26) + le16(l, 28);
+                    f.seek(here);
+                    if (data % 4 != 0) throw new IOException("resources.arsc مش محاذى على 4 بايت (الإزاحة " + data + ")");
+                    return;
+                }
+            }
+            throw new IOException("resources.arsc مش موجود في الـ APK");
+        } finally { f.close(); }
+    }
+
+    private static int le16(byte[] b, int o) { return (b[o] & 0xFF) | ((b[o + 1] & 0xFF) << 8); }
+    private static long le32(byte[] b, int o) { return (b[o] & 0xFFL) | ((b[o + 1] & 0xFFL) << 8) | ((b[o + 2] & 0xFFL) << 16) | ((b[o + 3] & 0xFFL) << 24); }
 
     private static byte[] readAll(InputStream in) throws IOException { return readLimited(in, Long.MAX_VALUE); }
 
