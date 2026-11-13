@@ -280,6 +280,8 @@ final class Projects {
             p.on(signer.hasKey() ? "توقيع التطبيق…" : "إنشاء مفتاح التوقيع (مرة واحدة، ممكن ياخد ثواني)…");
             if (signed.exists()) signed.delete();
             signer.sign(unsigned, signed);
+            p.on("فحص الـ APK…");
+            ApkBuilder.checkAligned(signed);
         } finally {
             unsigned.delete();
             template.delete();
