@@ -32,18 +32,41 @@
   .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
   .chips button{border:1px solid var(--line);background:transparent;color:inherit;border-radius:999px;padding:4px 10px;font:inherit;font-size:13px;cursor:pointer}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+/* المكتبات: بيجرّب فولدر lib جنب الملف (أوفلاين) وبعدين أكتر من سيرفر على النت، ولو سيرفر محجوب عندك بيروح للي بعده */
+window.__failed = [];
+window.__libs = (function(){
+  var CJ = "https://cdnjs.cloudflare.com/ajax/libs/", JD = "https://cdn.jsdelivr.net/npm/", UP = "https://unpkg.com/";
+  var L = [
+    ["pdf.min.js", "pdfjsLib", [CJ + "pdf.js/3.11.174/pdf.min.js", UP + "pdfjs-dist@3.11.174/build/pdf.min.js", JD + "pdfjs-dist@3.11.174/build/pdf.min.js"]],
+    ["pdf.worker.min.js", null, [CJ + "pdf.js/3.11.174/pdf.worker.min.js", UP + "pdfjs-dist@3.11.174/build/pdf.worker.min.js", JD + "pdfjs-dist@3.11.174/build/pdf.worker.min.js"]],
+    ["mammoth.browser.min.js", "mammoth", [CJ + "mammoth/1.6.0/mammoth.browser.min.js", UP + "mammoth@1.6.0/mammoth.browser.min.js", JD + "mammoth@1.6.0/mammoth.browser.min.js"]],
+    ["jszip.min.js", "JSZip", [CJ + "jszip/3.10.1/jszip.min.js", UP + "jszip@3.10.1/dist/jszip.min.js", JD + "jszip@3.10.1/dist/jszip.min.js"]],
+    ["docx.js", "docx", [UP + "docx@8.5.0/build/index.js", JD + "docx@8.5.0/build/index.js", CJ + "docx/8.5.0/docx.js", UP + "docx@7.8.2/build/index.js", CJ + "docx/7.8.2/docx.js"]],
+    ["pptxgen.bundle.js", "PptxGenJS", [CJ + "PptxGenJS/3.12.0/pptxgen.bundle.js", UP + "pptxgenjs@3.12.0/dist/pptxgen.bundle.js", JD + "pptxgenjs@3.12.0/dist/pptxgen.bundle.js"]],
+    ["html2pdf.bundle.min.js", "html2pdf", [CJ + "html2pdf.js/0.10.1/html2pdf.bundle.min.js", UP + "html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js", JD + "html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"]]
+  ];
+  function load(u, g){
+    return new Promise(function(res, rej){
+      var t = document.createElement("script"); t.src = u;
+      t.onload = function(){ if(g && !window[g]) rej(u); else res(); };
+      t.onerror = function(){ rej(u); };
+      document.head.appendChild(t);
+    });
+  }
+  return Promise.all(L.map(function(x){
+    var urls = ["lib/" + x[0]].concat(x[2]);
+    return urls.reduce(function(p, u){ return p.catch(function(){ return load(u, x[1]); }); }, Promise.reject())
+      .catch(function(){ window.__failed.push(x[1] || x[0]); });
+  }));
+})();
+</script>
 </head>
 <body>
 <main>
   <header>
     <h1>📚 SiMo Lecture</h1>
-    <p>حوّل أي ملف لمحاضرة بالصيغة اللي تطلبها · مجاني وبيشتغل على جهازك</p>
+    <p>حوّل أي ملف لمحاضرة بالصيغة اللي تطلبها · مجاني وبيشتغل على جهازك (وأوفلاين لو فولدر lib موجود)</p>
   </header>
 
   <div class="card">
@@ -458,7 +481,7 @@ var Engine = (function(){
   });
 
   function setMsg(t, cls){ var m = $("msg"); m.className = cls || ""; m.textContent = t; }
-  function need(name, ok){ if(!ok) throw new Error("مكتبة " + name + " ما اتحمّلتش. اتأكد من الإنترنت وحدّث الصفحة."); }
+  function need(name, ok){ if(!ok) throw new Error("مكتبة " + name + " ما اتحمّلتش (الإنترنت أو سيرفر محجوب عندك). حدّث الصفحة، ولو فضلت المشكلة حمّل المكتبات في فولدر lib زي ما في lib-urls.txt."); }
 
   /* ---------- قراءة الملفات ---------- */
   function decodeXml(s){
@@ -499,7 +522,7 @@ var Engine = (function(){
     var buf = await file.arrayBuffer();
     if(n.endsWith(".pdf")){
       need("PDF.js", window.pdfjsLib);
-      pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "lib/pdf.worker.min.js";
       var pdf = await pdfjsLib.getDocument({data: buf}).promise, pages = [];
       var p1 = range && range.from ? Math.max(1, range.from) : 1, p2 = range && range.to ? Math.min(pdf.numPages, range.to) : pdf.numPages;
       if(p1 > p2) throw new Error("نطاق الصفحات غلط. الملف فيه " + pdf.numPages + " صفحة.");
@@ -634,6 +657,8 @@ var Engine = (function(){
     e.preventDefault();
     var go = $("go"); go.disabled = true;
     try{
+      setMsg("⏳ بحمّل المكتبات...");
+      await window.__libs;
       var fmt = document.querySelector('input[name="fmt"]:checked').value;
       var files = Array.prototype.slice.call($("files").files);
       if(!files.length) throw new Error("ارفع ملف المادة الأول.");
