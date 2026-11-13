@@ -61,8 +61,9 @@ public final class ApkBuilder {
                     rep.put(LABEL_PLACEHOLDER, spec.label.trim());
                     rep.put(VERSION_PLACEHOLDER, spec.versionName);
                     bytes = AxmlPatcher.patch(bytes, rep, spec.versionCode);
-                } else if (spec.icons != null && ICON.matcher(name).matches()) {
-                    bytes = spec.icons.png(iconSize(name));
+                } else if (spec.icons != null && name.startsWith("res/") && name.endsWith(".png") && (isMarked(bytes) || ICON.matcher(name).matches())) {
+                    int px = pngWidth(bytes);
+                    bytes = spec.icons.png(px > 0 ? px : iconSize(name));
                     spec.iconsReplaced++;
                 }
                 put(zo, name, bytes, name.equals("resources.arsc") || name.endsWith(".png") || name.endsWith(".so"));
@@ -77,6 +78,23 @@ public final class ApkBuilder {
             zo.close();
             in.close();
         }
+    }
+
+    /** هل الصورة هي أيقونة القالب (فيها العلامة)؟ بتشتغل مهما كان مسار الملف. */
+    static boolean isMarked(byte[] png) {
+        byte[] m = "h2a-icon-marker".getBytes();
+        outer:
+        for (int i = 0; i + m.length <= png.length && i < 600; i++) {
+            for (int j = 0; j < m.length; j++) if (png[i + j] != m[j]) continue outer;
+            return true;
+        }
+        return false;
+    }
+
+    /** عرض الـ PNG من الهيدر (IHDR) أو 0 لو مش PNG. */
+    static int pngWidth(byte[] p) {
+        if (p.length < 24 || (p[0] & 0xFF) != 0x89 || p[1] != 'P') return 0;
+        return ((p[16] & 0xFF) << 24) | ((p[17] & 0xFF) << 16) | ((p[18] & 0xFF) << 8) | (p[19] & 0xFF);
     }
 
     static int iconSize(String path) {
