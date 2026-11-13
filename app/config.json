@@ -1,0 +1,38 @@
+{
+  "appName": "SiMo Html2Apk",
+  "appId": "com.app.amosie9",
+  "versionName": "1.0",
+  "versionCode": "auto",
+  "source": "html",
+  "url": "",
+  "orientation": "auto",
+  "fullscreen": false,
+  "keepScreenOn": false,
+  "desktopMode": false,
+  "allowMixedContent": false,
+  "backgroundColor": "#ffffff",
+  "splashColor": "#ffffff",
+  "splashSeconds": 1,
+  "cacheMode": "default",
+  "bridge": true,
+  "downloads": true,
+  "pullToRefresh": false,
+  "ads": {
+    "enabled": false,
+    "testMode": true,
+    "appId": "",
+    "bannerId": "",
+    "bannerPosition": "bottom",
+    "interstitialId": "",
+    "interstitialMode": "none",
+    "interstitialEvery": 3,
+    "rewardedId": ""
+  },
+  "deepLinkScheme": "",
+  "permissions": [],
+  "outputs": {
+    "apk": true,
+    "aab": true,
+    "project": false
+  }
+}
