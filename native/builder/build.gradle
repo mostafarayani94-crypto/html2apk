@@ -1,0 +1,32 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'com.h2a.builder'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'com.h2a.builder'
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName '1.0.0'
+    }
+    buildTypes { release { minifyEnabled false } }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    packaging {
+        resources {
+            excludes += ['META-INF/versions/**', 'META-INF/DEPENDENCIES', 'META-INF/LICENSE*', 'META-INF/NOTICE*', 'META-INF/INDEX.LIST', 'META-INF/*.kotlin_module', 'META-INF/MANIFEST.MF']
+        }
+    }
+    // ما نضغطش القالب جوه الـ APK
+    androidResources { noCompress 'apk' }
+    lint { abortOnError false; checkReleaseBuilds false }
+}
+
+dependencies {
+    implementation 'com.android.tools.build:apksig:8.5.2'
+    implementation 'org.bouncycastle:bcprov-jdk18on:1.78.1'
+    implementation 'org.bouncycastle:bcpkix-jdk18on:1.78.1'
+}
