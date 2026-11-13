@@ -1,8 +1,8 @@
 {
-  "appName": "SiMo html2apk",
-  "appId": "com.app.amosie8",
+  "appName": "html2apk (1)",
+  "appId": "com.app.a926010",
   "versionName": "1.0",
-  "versionCode": 1,
+  "versionCode": "auto",
   "source": "html",
   "url": "",
   "orientation": "auto",
