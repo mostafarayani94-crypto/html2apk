@@ -1,8 +1,8 @@
 {
-  "appName": "html2apk (1)",
-  "appId": "com.app.a926010",
+  "appName": "SiMo Lecture",
+  "appId": "com.app.amosie9",
   "versionName": "1.0",
-  "versionCode": "auto",
+  "versionCode": 1,
   "source": "html",
   "url": "",
   "orientation": "auto",
