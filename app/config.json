@@ -32,7 +32,7 @@
   "permissions": [],
   "outputs": {
     "apk": true,
-    "aab": true,
+    "aab": false,
     "project": false
   }
 }
