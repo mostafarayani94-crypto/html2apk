@@ -32,7 +32,7 @@ jobs:
       - name: Generate icons
         run: |
           python3 native/tools/make_icons.py native/shell/src/main/res '#334155'
-          python3 native/tools/make_icons.py native/builder/src/main/res '#6366f1'
+          python3 native/tools/builder_icons.py native/builder/src/main/res
 
       - name: Build template (shell) APK
         run: gradle -p native :shell:assembleRelease --no-daemon --stacktrace
