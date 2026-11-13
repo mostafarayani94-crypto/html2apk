@@ -87,6 +87,14 @@ public class CoreTest {
         return m;
     }
 
+    static final class Spec2 {
+        static void build(File template, File out, File html) throws IOException {
+            ApkBuilder.Spec sp = new ApkBuilder.Spec();
+            sp.packageName = "com.h2a.al"; sp.label = "x"; sp.versionName = "1"; sp.versionCode = 1; sp.configJson = "{}"; sp.html = html;
+            ApkBuilder.build(template, out, sp);
+        }
+    }
+
     static byte[] fakePng(int w) {
         byte[] b = new byte[60];
         b[0] = (byte) 0x89; b[1] = 'P'; b[2] = 'N'; b[3] = 'G';
@@ -146,6 +154,22 @@ public class CoreTest {
         check(AxmlPatcher.readStrings(r.get("AndroidManifest.xml")).contains("com.h2a.app1") && versionCodeOf(r.get("AndroidManifest.xml")) == 5, "manifest");
         check(r.get("res/mipmap-hdpi-v4/ic_launcher.png")[0] == 72 && r.get("res/Xy.png")[0] == (byte) 192 && r.get("res/drawable/other.png")[0] == 7 && sp.iconsReplaced == 2, "أحجام الأيقونات " + sizes);
         ZipFile zf = new ZipFile(out); check(zf.getEntry("resources.arsc").getMethod() == ZipEntry.STORED, "resources.arsc غير مضغوط"); zf.close();
+        ApkBuilder.checkAligned(out);
+        // محاذاة مع أسماء بأطوال مختلفة (1..4) عشان الـ padding يتجرب بكل الأحوال
+        for (int extra = 0; extra < 5; extra++) {
+            Map<String, byte[]> t2 = new LinkedHashMap<String, byte[]>();
+            t2.put("AndroidManifest.xml", axml(false, strs));
+            t2.put("classes.dex", new byte[1 + extra * 7]);
+            t2.put("a" + new String(new char[extra]).replace('\0', 'x') + ".txt", new byte[3 + extra]);
+            t2.put("resources.arsc", new byte[]{9, 9, 9, 9, 9});
+            File tf = zipOf(new File(dir, "t2-" + extra + ".apk"), t2);
+            Spec2.build(tf, new File(dir, "o2-" + extra + ".apk"), html);
+            ApkBuilder.checkAligned(new File(dir, "o2-" + extra + ".apk"));
+        }
+        // فحص الرفض: ملف بدون محاذاة أو مضغوط
+        File raw = new File(dir, "raw.apk");
+        try (java.util.zip.ZipOutputStream zz = new java.util.zip.ZipOutputStream(new FileOutputStream(raw))) { zz.putNextEntry(new ZipEntry("resources.arsc")); zz.write(new byte[]{1, 2, 3, 4, 5, 6, 7, 8}); zz.closeEntry(); }
+        try { ApkBuilder.checkAligned(raw); check(false, "لازم يرفض الـ arsc المضغوط"); } catch (IOException ok) { check(ok.getMessage().contains("resources.arsc"), ok.getMessage()); }
 
         // ZIP: مجلد واحد في الجذر + حماية
         Map<String, byte[]> site = new LinkedHashMap<String, byte[]>();
