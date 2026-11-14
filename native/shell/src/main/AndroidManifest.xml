@@ -29,5 +29,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <!-- authority بيتبدّل مع كل تطبيق (ApkBuilder.AUTH_PLACEHOLDER) عشان ما يحصلش تعارض بين التطبيقات -->
+        <provider
+            android:name="com.h2a.shell.ShareProvider"
+            android:authorities="com.h2a.placeholder.sharefiles"
+            android:exported="false"
+            android:grantUriPermissions="true" />
     </application>
 </manifest>
