@@ -92,11 +92,13 @@ public class AppBridge implements SensorEventListener {
     }
 
     @JavascriptInterface
-    public void share(String text) {
-        Intent i = new Intent(Intent.ACTION_SEND);
-        i.setType("text/plain");
-        i.putExtra(Intent.EXTRA_TEXT, text == null ? "" : text);
-        act.startActivity(Intent.createChooser(i, null));
+    public void share(final String text) {
+        act.runOnUiThread(new Runnable() { public void run() {
+            Intent i = new Intent(Intent.ACTION_SEND);
+            i.setType("text/plain");
+            i.putExtra(Intent.EXTRA_TEXT, text == null ? "" : text);
+            try { act.startActivity(Intent.createChooser(i, null)); } catch (Exception e) { /* مفيش تطبيق مشاركة */ }
+        } });
     }
 
     @JavascriptInterface
