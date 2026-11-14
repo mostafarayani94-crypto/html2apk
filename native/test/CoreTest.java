@@ -105,7 +105,7 @@ public class CoreTest {
     }
 
     public static void main(String[] args) throws Exception {
-        String[] strs = {"manifest", "package", "versionCode", "versionName", "application", "label", ApkBuilder.PKG_PLACEHOLDER, ApkBuilder.VERSION_PLACEHOLDER, ApkBuilder.LABEL_PLACEHOLDER, "android.permission.INTERNET"};
+        String[] strs = {"manifest", "package", "versionCode", "versionName", "application", "label", ApkBuilder.PKG_PLACEHOLDER, ApkBuilder.VERSION_PLACEHOLDER, ApkBuilder.LABEL_PLACEHOLDER, "android.permission.INTERNET", ApkBuilder.AUTH_PLACEHOLDER};
         for (boolean utf8 : new boolean[]{false, true}) {
             byte[] src = axml(utf8, strs);
             check(AxmlPatcher.readStrings(src).equals(Arrays.asList(strs)), "قراءة الـ pool " + utf8);
@@ -113,9 +113,10 @@ public class CoreTest {
             rep.put(ApkBuilder.PKG_PLACEHOLDER, "com.h2a.myapp123");
             rep.put(ApkBuilder.LABEL_PLACEHOLDER, "حاسبتي الجميلة جداً ✓");   // أطول بكتير + عربي + رموز
             rep.put(ApkBuilder.VERSION_PLACEHOLDER, "2.5.1");
+            rep.put(ApkBuilder.AUTH_PLACEHOLDER, "com.h2a.myapp123.sharefiles");
             byte[] out = AxmlPatcher.patch(src, rep, 4242);
             List<String> got = AxmlPatcher.readStrings(out);
-            check(got.get(6).equals("com.h2a.myapp123") && got.get(7).equals("2.5.1") && got.get(8).equals("حاسبتي الجميلة جداً ✓") && got.get(9).equals("android.permission.INTERNET") && got.get(0).equals("manifest"), "النصوص بعد التعديل " + utf8 + got);
+            check(got.get(6).equals("com.h2a.myapp123") && got.get(7).equals("2.5.1") && got.get(8).equals("حاسبتي الجميلة جداً ✓") && got.get(9).equals("android.permission.INTERNET") && got.get(10).equals("com.h2a.myapp123.sharefiles") && got.get(0).equals("manifest"), "النصوص بعد التعديل " + utf8 + got);
             check(versionCodeOf(out) == 4242, "versionCode " + utf8);
             check(ByteBuffer.wrap(out).order(ByteOrder.LITTLE_ENDIAN).getInt(4) == out.length, "حجم الملف في الهيدر");
             // ما نكسرش الباقي: التعديل مرتين بيشتغل
@@ -151,7 +152,7 @@ public class CoreTest {
         check(!r.containsKey("META-INF/CERT.SF") && !r.containsKey("META-INF/CERT.RSA") && !r.containsKey("META-INF/MANIFEST.MF"), "حذف التوقيعات القديمة");
         check(r.containsKey("META-INF/com/android/build/gradle/app-metadata.properties"), "باقي META-INF");
         check(new String(r.get("assets/www/index.html"), "UTF-8").equals("<h1>مرحبا</h1>"), "HTML");
-        check(AxmlPatcher.readStrings(r.get("AndroidManifest.xml")).contains("com.h2a.app1") && versionCodeOf(r.get("AndroidManifest.xml")) == 5, "manifest");
+        check(AxmlPatcher.readStrings(r.get("AndroidManifest.xml")).contains("com.h2a.app1") && AxmlPatcher.readStrings(r.get("AndroidManifest.xml")).contains("com.h2a.app1.sharefiles") && !AxmlPatcher.readStrings(r.get("AndroidManifest.xml")).contains("com.h2a.placeholder.sharefiles") && versionCodeOf(r.get("AndroidManifest.xml")) == 5, "manifest");
         check(r.get("res/mipmap-hdpi-v4/ic_launcher.png")[0] == 72 && r.get("res/Xy.png")[0] == (byte) 192 && r.get("res/drawable/other.png")[0] == 7 && sp.iconsReplaced == 2, "أحجام الأيقونات " + sizes);
         ZipFile zf = new ZipFile(out); check(zf.getEntry("resources.arsc").getMethod() == ZipEntry.STORED, "resources.arsc غير مضغوط"); zf.close();
         ApkBuilder.checkAligned(out);
