@@ -137,6 +137,7 @@ public class MainActivity extends Activity {
             s.setAllowUniversalAccessFromFileURLs(true);
         }
         if (cfg.optBoolean("pullToRefresh", false)) setupPullToRefresh();
+        web.addJavascriptInterface(new ShareBridge(this), "H2AShare"); // navigator.share لكل التطبيقات (نص/رابط/ملفات)
         boolean wantBridge = cfg.optBoolean("bridge", true) && !remote; // أمان: مفيش جسر لموقع خارجي
         boolean wantDownloads = cfg.optBoolean("downloads", true);
         if (wantBridge || wantDownloads) {
@@ -146,7 +147,8 @@ public class MainActivity extends Activity {
         }
 
         web.setWebViewClient(new WebViewClient() {
-            @Override public void onPageFinished(WebView v, String u) { bar.setVisibility(View.GONE); }
+            @Override public void onPageStarted(WebView v, String u, android.graphics.Bitmap f) { v.evaluateJavascript(ShareBridge.POLYFILL, null); }
+            @Override public void onPageFinished(WebView v, String u) { bar.setVisibility(View.GONE); v.evaluateJavascript(ShareBridge.POLYFILL, null); }
             @Override public void onReceivedError(WebView v, WebResourceRequest r, android.webkit.WebResourceError e) {
                 if (r.isForMainFrame()) {
                     lastUrl = r.getUrl().toString();
