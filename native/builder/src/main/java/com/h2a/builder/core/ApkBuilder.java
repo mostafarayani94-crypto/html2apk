@@ -20,7 +20,7 @@ import java.util.zip.ZipOutputStream;
 
 /** بيبني APK غير موقّع من القالب (template.apk): يبدّل الـ manifest والأيقونات ويضيف ملفات الويب وconfig.json. */
 public final class ApkBuilder {
-    public static final String PKG_PLACEHOLDER = "com.h2a.placeholder", LABEL_PLACEHOLDER = "__APP_LABEL__", VERSION_PLACEHOLDER = "0.0.0-h2a";
+    public static final String PKG_PLACEHOLDER = "com.h2a.placeholder", LABEL_PLACEHOLDER = "__APP_LABEL__", VERSION_PLACEHOLDER = "0.0.0-h2a", AUTH_PLACEHOLDER = "com.h2a.placeholder.sharefiles";
     private static final long MAX_UNPACKED = 150L * 1024 * 1024;
     private static final Pattern ICON = Pattern.compile("^res/mipmap[^/]*/ic_launcher\\.png$");
     private static final Pattern PKG = Pattern.compile("^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$");
@@ -61,6 +61,7 @@ public final class ApkBuilder {
                     rep.put(PKG_PLACEHOLDER, spec.packageName);
                     rep.put(LABEL_PLACEHOLDER, spec.label.trim());
                     rep.put(VERSION_PLACEHOLDER, spec.versionName);
+                    rep.put(AUTH_PLACEHOLDER, spec.packageName + ".sharefiles");
                     bytes = AxmlPatcher.patch(bytes, rep, spec.versionCode);
                 } else if (spec.icons != null && name.startsWith("res/") && name.endsWith(".png") && (isMarked(bytes) || ICON.matcher(name).matches())) {
                     int px = pngWidth(bytes);
