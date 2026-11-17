@@ -3,11 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="color-scheme" content="light dark">
-<title>محوّل HTML إلى APK</title>
+<meta name="color-scheme" content="light">
+<title>SiMo Html to Apk</title>
 <style>
-:root{--bg:#f4f6fb;--card:#fff;--line:#e3e7f0;--tx:#0f172a;--mut:#64748b;--pri:#0284c7;--pri2:#2563eb;--ok:#059669;--bad:#dc2626;--soft:#e6f3fb;--shadow:0 1px 2px rgba(15,23,42,.06),0 8px 24px rgba(2,132,199,.08)}
-@media (prefers-color-scheme:dark){:root{--bg:#0b1220;--card:#131c2f;--line:#223049;--tx:#e8edf7;--mut:#8c9ab8;--pri:#38bdf8;--pri2:#60a5fa;--ok:#34d399;--bad:#f87171;--soft:#17263f;--shadow:0 1px 2px rgba(0,0,0,.3)}}
+:root{--bg:#F6F8FF;--card:rgba(255,255,255,.65);--line:rgba(139,125,230,.35);--tx:#1E1B4B;--mut:#5d5b8a;--pri:#6D28D9;--pri2:#6D28D9;--ok:#047857;--bad:#dc2626;--soft:rgba(109,40,217,.10);--shadow:0 8px 24px rgba(80,70,170,.12);--wt:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 220%22 preserveAspectRatio=%22none%22%3E%3Cpath d=%22M0 0H400V70C340 120 300 40 230 80C160 120 110 160 0 110Z%22 fill=%22%2393C5FD%22 fill-opacity=%22.55%22/%3E%3Cpath d=%22M0 0H210C170 50 120 70 70 60C40 55 20 80 0 120Z%22 fill=%22%23C4B5FD%22 fill-opacity=%22.6%22/%3E%3Cpath d=%22M400 20V110C370 150 330 120 300 95C340 90 370 60 400 20Z%22 fill=%22%23FBCFE8%22 fill-opacity=%22.7%22/%3E%3C/svg%3E");--wb:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 200%22 preserveAspectRatio=%22none%22%3E%3Cpath d=%22M0 70C70 20 130 40 200 80C270 120 330 90 400 40V200H0Z%22 fill=%22%2393C5FD%22 fill-opacity=%22.55%22/%3E%3Cpath d=%22M0 120C80 80 150 130 230 110C300 92 350 110 400 90V200H0Z%22 fill=%22%23C4B5FD%22 fill-opacity=%22.75%22/%3E%3Cpath d=%22M180 200C250 150 330 165 400 130V200Z%22 fill=%22%23FBCFE8%22 fill-opacity=%22.7%22/%3E%3C/svg%3E")}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}[hidden]{display:none!important}
 html{background:var(--bg)}
 body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.65 "Segoe UI",Tahoma,system-ui,sans-serif;padding-bottom:calc(130px + env(safe-area-inset-bottom))}
@@ -19,6 +18,7 @@ main{max-width:600px;margin:0 auto;padding:6px 14px;display:grid;gap:14px}
 .card h2{margin:0;font-size:16px;display:flex;align-items:center;gap:10px}
 .num{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--soft);color:var(--pri);font-size:13px;font-weight:700}
 label.f{display:grid;gap:5px;font-size:13px;color:var(--mut)}
+input[type=number]{width:100%;min-height:48px;border:1.5px solid var(--line);border-radius:14px;padding:0 12px;font:inherit;color:var(--tx)}
 input[type=text],input:not([type]),input[type=url],textarea,select{width:100%;background:var(--bg);color:var(--tx);border:1.5px solid var(--line);border-radius:12px;padding:11px 13px;font:inherit;min-height:46px;outline:0}
 input:focus,textarea:focus,select:focus{border-color:var(--pri)}
 textarea{direction:ltr;text-align:left;min-height:200px;font:13px/1.5 ui-monospace,monospace;white-space:pre}
@@ -76,14 +76,56 @@ code{direction:ltr;unicode-bidi:embed;background:var(--bg);padding:1px 7px;borde
 .tpl{display:flex;gap:14px;align-items:center;cursor:pointer}
 .tpl .e{font-size:34px;width:64px;height:64px;border-radius:18px;background:var(--soft);display:grid;place-items:center;flex:none}
 .tpl b{display:block;font-size:17px}.tpl span{color:var(--mut);font-size:13.5px}
+
+/* ===== هوية SiMo UI ===== */
+html,body{background:#F6F8FF}
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:var(--wt) top center/100% 210px no-repeat,var(--wb) bottom center/100% 200px no-repeat}
+.hdr{position:sticky;top:0;z-index:6;direction:ltr;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:calc(12px + env(safe-area-inset-top)) 14px 6px;background:transparent}
+.gbtn{width:42px;height:42px;min-height:0;padding:0;border-radius:50%;display:grid;place-items:center;flex:none;color:#1E1B4B;background:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.8);box-shadow:0 6px 16px rgba(80,70,170,.14);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);font-weight:400}
+.gbtn.lg{width:44px;height:44px}.gbtn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.gbtn[hidden]{display:none!important}.gbtn.ph{visibility:hidden;display:grid!important}
+.brand{flex:1;min-width:0;text-align:center;direction:ltr;line-height:1.1}
+.brand h1{margin:0;font-size:22px;letter-spacing:-.01em;color:#1E1B4B;white-space:nowrap}
+.brand h1 b{font-weight:900;font-size:27px}.brand h1 span{font-weight:400}
+.brand .arc{display:block;width:96px;height:9px;margin:-1px auto 0}
+.brand .sub{display:block;direction:rtl;font-size:12.5px;color:var(--mut);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card,.proj,.nav,.sheet{-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.card,.proj{border-radius:22px}
+.proj{border-inline-start:1px solid var(--line)}
+button.ghost{background:linear-gradient(150deg,#efe8ff,#cdb9fb);border:1.5px solid #8b5cf6;color:#3b1d8f}
+button.line{background:rgba(255,255,255,.55);border:1.5px solid var(--line);color:#1E1B4B}
+button.danger{background:rgba(255,255,255,.55)}
+button{box-shadow:0 6px 14px rgba(109,40,217,.22)}
+button.ghost,button.line,.seg button,.sheet button,.proj .act button,.nav button,.gbtn,.iconbtn{box-shadow:none}
+.gbtn{box-shadow:0 6px 16px rgba(80,70,170,.14)}
+.newbtn{background:#6D28D9;box-shadow:0 8px 20px rgba(109,40,217,.32)}
+.bar button.main{background:#6D28D9;box-shadow:0 8px 20px rgba(109,40,217,.35)}
+.bar{background:linear-gradient(to top,rgba(246,248,255,.9) 60%,transparent)}
+.seg{background:rgba(255,255,255,.55);border:1px solid var(--line)}
+.seg button.on{background:linear-gradient(150deg,#efe8ff,#cdb9fb);color:#3b1d8f;box-shadow:none}
+.nav{background:rgba(255,255,255,.75)}.nav button.on{background:linear-gradient(150deg,#efe8ff,#cdb9fb);color:#3b1d8f}
+.sheet{background:#f7f5ff}
+input[type=number]{width:100%;min-height:48px;border:1.5px solid var(--line);border-radius:14px;padding:0 12px;font:inherit;color:var(--tx)}
+input[type=text],input:not([type]),input[type=url],input[type=number],textarea,select{background:rgba(255,255,255,.85)}
+.sw input:checked{background:#6D28D9}
+.foot{display:flex;align-items:center;gap:12px;justify-content:center;margin:20px 0 4px;color:#4338CA;font-weight:700;font-size:14px}
+.foot i{flex:1;max-width:80px;height:1.5px;background:linear-gradient(90deg,transparent,var(--line))}.foot i:last-child{transform:scaleX(-1)}
+.num{background:rgba(109,40,217,.12);color:#6D28D9}
 </style>
 </head>
 <body>
 <div class="toast" id="toast" hidden></div>
+<header class="hdr">
+  <button class="gbtn lg" id="menuBtn" type="button" aria-label="القائمة"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <div class="brand"><h1><b>SiMo</b> <span>Html to Apk</span></h1>
+    <svg class="arc" viewBox="0 0 100 10" aria-hidden="true"><path d="M3 8C30 1 70 1 97 5" fill="none" stroke="#F97316" stroke-width="3" stroke-linecap="round"/></svg>
+    <span class="sub" id="editTitle">مشاريعي</span></div>
+  <button class="gbtn" id="backBtn" type="button" aria-label="رجوع" hidden><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+  <button class="gbtn" id="topNew" type="button" aria-label="مشروع جديد"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+</header>
 
 <!-- ========== الرئيسية: مشاريعي ========== -->
 <section id="vHome">
-  <div class="top"><h1>مشاريعي</h1><button class="iconbtn" id="menuBtn" type="button" aria-label="القائمة">⋮</button></div>
   <main>
     <button class="newbtn" id="newBtn" type="button">＋ إنشاء مشروع</button>
     <div id="list"></div>
@@ -92,7 +134,6 @@ code{direction:ltr;unicode-bidi:embed;background:var(--bg);padding:1px 7px;borde
 
 <!-- ========== القوالب ========== -->
 <section id="vTpl" hidden>
-  <div class="top"><h1>القوالب</h1></div>
   <main>
     <p class="hint">اختار قالب جاهز يبدأ منه مشروعك، وتعدّل الكود زي ما تحب.</p>
     <div id="tplList" style="display:grid;gap:12px"></div>
@@ -101,7 +142,6 @@ code{direction:ltr;unicode-bidi:embed;background:var(--bg);padding:1px 7px;borde
 
 <!-- ========== محرر المشروع ========== -->
 <section id="vEdit" hidden>
-  <div class="top"><button class="iconbtn" id="backBtn" type="button" aria-label="رجوع">➜</button><h1 id="editTitle">مشروع جديد</h1></div>
   <main>
     <section class="card">
       <h2><span class="num">1</span> مصدر التطبيق</h2>
@@ -137,6 +177,7 @@ code{direction:ltr;unicode-bidi:embed;background:var(--bg);padding:1px 7px;borde
         <label class="f">اسم الإصدار<input id="ver" dir="ltr" value="1.0"></label>
         <label class="f">لون الخلفية<input id="bg" type="color" value="#ffffff"></label>
       </div>
+      <label class="f">رقم البناء (اختياري، يدوي)<input id="vcm" type="number" inputmode="numeric" min="0" placeholder="سيبه فاضي وهيزيد لوحده"></label>
       <p class="hint" id="pkgLine" hidden>معرّف الحزمة: <code id="pkg">—</code> · رقم البناء: <b id="vcode">0</b> (بيزيد لوحده مع كل تحديث)</p>
     </section>
 
@@ -167,6 +208,35 @@ code{direction:ltr;unicode-bidi:embed;background:var(--bg);padding:1px 7px;borde
       </details>
     </section>
 
+    <section class="card">
+      <h2><span class="num">4</span> ميزات التطبيق</h2>
+      <div class="sub" style="font-size:13px;color:var(--mut)">لون الشريط وشاشة البداية والروابط</div>
+      <div>
+        <label class="sw"><span>لون شريط الحالة</span><input type="checkbox" id="sbOn"></label>
+        <input type="color" id="sbColor" value="#6D28D9" hidden>
+        <label class="sw"><span>لون شريط أزرار النظام</span><input type="checkbox" id="nbOn"></label>
+        <input type="color" id="nbColor" value="#ffffff" hidden>
+        <label class="sw"><span>شاشة بداية<small>أيقونة واسم التطبيق لحد ما الصفحة تفتح</small></span><input type="checkbox" id="splash"></label>
+        <input type="color" id="splashColor" value="#ffffff" hidden>
+        <label class="sw"><span>السماح بالتكبير بالإصبعين</span><input type="checkbox" id="zoom"></label>
+        <label class="sw"><span>تأكيد قبل الخروج<small>رسالة «تقفل التطبيق؟» عند الرجوع من أول شاشة</small></span><input type="checkbox" id="confirmExit"></label>
+        <label class="sw"><span>فتح الروابط الخارجية في المتصفح</span><input type="checkbox" id="extBrowser"></label>
+        <label class="sw"><span>حفظ الملفات في مجلد تختاره<small>أول حفظ بيطلب منك المجلد، والصفحة تقدر تغيّره <code>H2A.chooseFolder()</code></small></span><input type="checkbox" id="saveFolder"></label>
+      </div>
+      <div class="sub" style="font-size:13px;color:var(--mut);margin-top:6px">التطبيق يظهر في «فتح بواسطة» و«مشاركة إلى»</div>
+      <div>
+        <label class="sw"><span>ملفات HTML</span><input type="checkbox" data-ow="html"></label>
+        <label class="sw"><span>ملفات PDF</span><input type="checkbox" data-ow="pdf"></label>
+        <label class="sw"><span>ملفات Office وCSV وTXT</span><input type="checkbox" data-ow="office"></label>
+        <label class="sw"><span>الصور</span><input type="checkbox" data-ow="image"></label>
+        <label class="sw"><span>أي ملف</span><input type="checkbox" data-ow="any"></label>
+        <label class="sw"><span>استقبال المشاركة (ملفات ونصوص)</span><input type="checkbox" data-ow="send"></label>
+      </div>
+      <p class="hint">الصفحة بتستلم الملفات بـ <code>H2A.onFiles(function(files){…})</code> وكل ملف فيه <code>name</code> و<code>type</code> و<code>blob()</code> و<code>text()</code>. النص المشارَك في <code>textContent</code>.</p>
+      <label class="f">رابط التحديث التلقائي (اختياري، https)<input id="updUrl" dir="ltr" placeholder="https://example.com/update.json" autocapitalize="off" inputmode="url"></label>
+      <p class="hint">الملف فيه: <code>{"versionCode":7,"versionName":"1.6","apk":"https://…/app.apk","notes":"الجديد"}</code></p>
+    </section>
+
     <section class="card result" id="prog" hidden>
       <h2>⚙️ التقدّم</h2>
       <div class="prog" id="spin" hidden><i></i></div>
@@ -178,6 +248,8 @@ code{direction:ltr;unicode-bidi:embed;background:var(--bg);padding:1px 7px;borde
   </main>
   <div class="bar"><div class="in"><button class="line" id="saveOnly" type="button">حفظ</button><button class="main" id="go" type="button">ابنِ التطبيق</button></div></div>
 </section>
+
+<div class="foot" id="foot"><i></i><span>SiMo • محوّل HTML إلى APK</span><i></i></div>
 
 <nav class="nav" id="nav"><button id="navHome" class="on" type="button"><span>🏠</span>المشاريع</button><button id="navTpl" type="button"><span>🧩</span>القوالب</button></nav>
 
@@ -207,6 +279,8 @@ code{direction:ltr;unicode-bidi:embed;background:var(--bg);padding:1px 7px;borde
     view = v;
     $('#vHome').hidden = v !== 'home'; $('#vTpl').hidden = v !== 'tpl'; $('#vEdit').hidden = v !== 'edit';
     $('#nav').hidden = v === 'edit';
+    $('#backBtn').hidden = v !== 'edit'; $('#topNew').hidden = v === 'edit';
+    if (v === 'home') $('#editTitle').textContent = 'مشاريعي'; else if (v === 'tpl') $('#editTitle').textContent = 'القوالب';
     $('#navHome').classList.toggle('on', v === 'home'); $('#navTpl').classList.toggle('on', v === 'tpl');
     window.scrollTo(0, 0);
     if (v === 'home') renderList();
@@ -326,6 +400,13 @@ code{direction:ltr;unicode-bidi:embed;background:var(--bg);padding:1px 7px;borde
     $('#orient').value = s.orientation || 'auto'; $('#bg').value = s.backgroundColor || '#ffffff'; $('#cache').value = s.cacheMode || 'default';
     setBool('#fullscreen', s.fullscreen); setBool('#keepOn', s.keepScreenOn); setBool('#pull', s.pullToRefresh); setBool('#desktop', s.desktopMode); setBool('#mixed', s.allowMixedContent);
     setBool('#downloads', s.downloads !== false); setBool('#bridge', s.bridge !== false);
+    setBool('#sbOn', s.statusBarColor); $('#sbColor').value = s.statusBarColor || '#6D28D9'; $('#sbColor').hidden = !s.statusBarColor;
+    setBool('#nbOn', s.navBarColor); $('#nbColor').value = s.navBarColor || '#ffffff'; $('#nbColor').hidden = !s.navBarColor;
+    setBool('#splash', s.splash); $('#splashColor').value = s.splashColor || '#ffffff'; $('#splashColor').hidden = !s.splash;
+    setBool('#zoom', s.allowZoom); setBool('#confirmExit', s.confirmExit); setBool('#saveFolder', s.saveFolder); setBool('#extBrowser', s.externalLinks === 'browser');
+    $('#updUrl').value = s.updateUrl || ''; $('#vcm').value = s.versionCodeManual || '';
+    var ow = s.openWith || [];
+    document.querySelectorAll('[data-ow]').forEach(function (x) { x.checked = ow.indexOf(x.dataset.ow) >= 0; });
     var perms = s.permissions || [];
     document.querySelectorAll('[data-perm]').forEach(function (x) { x.checked = perms.indexOf(x.dataset.perm) >= 0; });
     $('#htmlName').textContent = ''; $('#zipName').textContent = m.hasZip ? '✓ ملف ZIP محفوظ من قبل' : '';
@@ -359,6 +440,9 @@ code{direction:ltr;unicode-bidi:embed;background:var(--bg);padding:1px 7px;borde
   $('#navHome').addEventListener('click', function () { show('home'); });
   $('#navTpl').addEventListener('click', function () { show('tpl'); });
   $('#backBtn').addEventListener('click', function () { show('home'); });
+  $('#topNew').addEventListener('click', function () { newProject(null); });
+  ['sb','nb'].forEach(function (k) { $('#' + k + 'On').addEventListener('change', function () { $('#' + k + 'Color').hidden = !this.checked; }); });
+  $('#splash').addEventListener('change', function () { $('#splashColor').hidden = !this.checked; });
 
   window.h2aBack = function () {
     if (!$('#shade').hidden) { closeSheet(); return true; }
@@ -402,13 +486,18 @@ code{direction:ltr;unicode-bidi:embed;background:var(--bg);padding:1px 7px;borde
       id: cur.id, appName: $('#name').value.trim(), source: source, code: $('#code').value, url: $('#url').value.trim(), versionName: $('#ver').value.trim() || '1.0',
       newZip: cur.newZip, newIcon: cur.newIcon, clearIcon: cur.clearIcon,
       settings: { orientation: $('#orient').value, backgroundColor: $('#bg').value, fullscreen: $('#fullscreen').checked, keepScreenOn: $('#keepOn').checked, pullToRefresh: $('#pull').checked,
-        desktopMode: $('#desktop').checked, allowMixedContent: $('#mixed').checked, downloads: $('#downloads').checked, bridge: $('#bridge').checked, cacheMode: $('#cache').value, permissions: perms }
+        desktopMode: $('#desktop').checked, allowMixedContent: $('#mixed').checked, downloads: $('#downloads').checked, bridge: $('#bridge').checked, cacheMode: $('#cache').value, permissions: perms,
+        statusBarColor: $('#sbOn').checked ? $('#sbColor').value : '', navBarColor: $('#nbOn').checked ? $('#nbColor').value : '',
+        splash: $('#splash').checked, splashColor: $('#splash').checked ? $('#splashColor').value : '', allowZoom: $('#zoom').checked, confirmExit: $('#confirmExit').checked,
+        saveFolder: $('#saveFolder').checked, externalLinks: $('#extBrowser').checked ? 'browser' : 'app', updateUrl: $('#updUrl').value.trim(),
+        versionCodeManual: parseInt($('#vcm').value, 10) || 0, openWith: Array.prototype.map.call(document.querySelectorAll('[data-ow]:checked'), function (x) { return x.dataset.ow; }) }
     };
   }
   function validate(c) {
     if (!c.appName) return 'اكتب اسم التطبيق.';
     if (source === 'html' && !c.code.trim()) return 'كود الـ HTML فاضي: اختار ملف أو الصق الكود.';
     if (source === 'zip' && !c.newZip && !cur.hasZip) return 'اختار ملف ZIP الأول.';
+    if (c.settings.updateUrl && !/^https:\/\/.+/i.test(c.settings.updateUrl)) return 'رابط التحديث لازم يبدأ بـ https://';
     if (source === 'url' && !/^https:\/\/.+/i.test(c.url)) return 'الرابط لازم يبدأ بـ https://';
     return null;
   }
