@@ -51,6 +51,13 @@ public class MainActivity extends Activity {
     private TextView pullHint;
     private float pullStartY = -1, pullDy;
     private String lastUrl = "";
+    private FilesBridge files;
+    private FrameLayout rootView;
+    private View splashView, customView;
+    private WebChromeClient.CustomViewCallback customCb;
+    private boolean confirmExit, externalBrowser;
+    private String baseHost = "";
+    private int normalUiFlags;
 
     private String readAsset(String name) {
         try {
@@ -87,7 +94,12 @@ public class MainActivity extends Activity {
             getWindow().getAttributes().layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
         }
 
+        confirmExit = cfg.optBoolean("confirmExit", false);
+        externalBrowser = cfg.optString("externalLinks", "app").equals("browser");
+        applySystemBars();
+
         FrameLayout root = new FrameLayout(this);
+        rootView = root;
         root.setBackgroundColor(bg);
         web = new WebView(this);
         web.setBackgroundColor(bg);
@@ -106,7 +118,9 @@ public class MainActivity extends Activity {
         FrameLayout.LayoutParams plp = new FrameLayout.LayoutParams((int) (44 * getResources().getDisplayMetrics().density), (int) (44 * getResources().getDisplayMetrics().density));
         plp.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
         root.addView(pullHint, plp);
+        if (cfg.optBoolean("splash", false)) addSplash(root, bg);
         setContentView(root);
+        normalUiFlags = getWindow().getDecorView().getSystemUiVisibility();
         applyFullscreen();
 
         WebSettings s = web.getSettings();
@@ -121,6 +135,11 @@ public class MainActivity extends Activity {
         String cache = cfg.optString("cacheMode", "default");
         if (cache.equals("noCache")) s.setCacheMode(WebSettings.LOAD_NO_CACHE);
         else if (cache.equals("cacheElseNetwork")) s.setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
+        if (cfg.optBoolean("allowZoom", false) && !cfg.optBoolean("desktopMode", false)) {
+            s.setSupportZoom(true);
+            s.setBuiltInZoomControls(true);
+            s.setDisplayZoomControls(false);
+        }
         if (cfg.optBoolean("desktopMode", false)) {
             s.setUserAgentString("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36");
             s.setUseWideViewPort(true);
@@ -132,6 +151,7 @@ public class MainActivity extends Activity {
 
         String url = cfg.optString("url", "");
         boolean remote = url.startsWith("https://");
+        if (remote) { try { baseHost = String.valueOf(Uri.parse(url).getHost()); } catch (Exception e) { baseHost = ""; } }
         if (!remote) { // ملفات التطبيق نفسه: نسمح بـ fetch/XHR/modules على الملفات المحلية
             s.setAllowFileAccessFromFileURLs(true);
             s.setAllowUniversalAccessFromFileURLs(true);
@@ -140,6 +160,11 @@ public class MainActivity extends Activity {
         web.addJavascriptInterface(new ShareBridge(this), "H2AShare"); // navigator.share لكل التطبيقات (نص/رابط/ملفات)
         boolean wantBridge = cfg.optBoolean("bridge", true) && !remote; // أمان: مفيش جسر لموقع خارجي
         boolean wantDownloads = cfg.optBoolean("downloads", true);
+        if (!remote) { // استقبال الملفات + مجلد الحفظ + الطباعة
+            files = new FilesBridge(this, web, cfg.optBoolean("saveFolder", false));
+            web.addJavascriptInterface(files, "H2AFiles");
+        }
+        if (wantDownloads && !remote) web.addJavascriptInterface(new DownloadBridge(this, files), "H2ADownload"); // حفظ الملفات بأسمائها الحقيقية
         if (wantBridge || wantDownloads) {
             bridge = new AppBridge(this, web, wantBridge);
             if (wantBridge) { web.addJavascriptInterface(bridge, "AndroidAPI"); web.addJavascriptInterface(bridge, "AndoridAPI"); }
@@ -147,24 +172,54 @@ public class MainActivity extends Activity {
         }
 
         web.setWebViewClient(new WebViewClient() {
-            @Override public void onPageStarted(WebView v, String u, android.graphics.Bitmap f) { v.evaluateJavascript(ShareBridge.POLYFILL, null); }
-            @Override public void onPageFinished(WebView v, String u) { bar.setVisibility(View.GONE); v.evaluateJavascript(ShareBridge.POLYFILL, null); }
+            private void inject(WebView v) {
+                v.evaluateJavascript(ShareBridge.POLYFILL, null);
+                v.evaluateJavascript(DownloadBridge.POLYFILL, null);
+                if (files != null) v.evaluateJavascript(FilesBridge.POLYFILL, null);
+            }
+            @Override public void onPageStarted(WebView v, String u, android.graphics.Bitmap f) { inject(v); }
+            @Override public void onPageFinished(WebView v, String u) {
+                bar.setVisibility(View.GONE);
+                inject(v);
+                if (files != null) v.evaluateJavascript("window.__h2aPoll&&window.__h2aPoll(true)", null);
+                hideSplash();
+            }
+            @Override public android.webkit.WebResourceResponse shouldInterceptRequest(WebView v, WebResourceRequest r) {
+                if (files != null) { android.webkit.WebResourceResponse x = files.intercept(r.getUrl()); if (x != null) return x; }
+                return super.shouldInterceptRequest(v, r);
+            }
             @Override public void onReceivedError(WebView v, WebResourceRequest r, android.webkit.WebResourceError e) {
                 if (r.isForMainFrame()) {
                     lastUrl = r.getUrl().toString();
-                    v.loadDataWithBaseURL(null, "<meta name=viewport content='width=device-width,initial-scale=1'><body style='font-family:sans-serif;text-align:center;padding:48px 20px;background:#f8fafc;color:#0f172a'><div style='font-size:56px'>\uD83D\uDCE1</div><h2>\u062A\u0639\u0630\u0651\u0631 \u0627\u0644\u0627\u062A\u0635\u0627\u0644</h2><p style='color:#64748b'>\u062A\u0623\u0643\u062F \u0645\u0646 \u0627\u0644\u0625\u0646\u062A\u0631\u0646\u062A \u0648\u0627\u0636\u063A\u0637 \u0625\u0639\u0627\u062F\u0629 \u0627\u0644\u0645\u062D\u0627\u0648\u0644\u0629</p><button onclick=\"location.href=" + JSONObject.quote(lastUrl).replace("\"", "&quot;") + "\" style='font-size:18px;padding:12px 28px;border:0;border-radius:12px;background:#4f46e5;color:#fff'>\u0625\u0639\u0627\u062F\u0629 \u0627\u0644\u0645\u062D\u0627\u0648\u0644\u0629</button></body>", "text/html", "UTF-8", null);
+                    String page = readAsset("h2a-error.html");
+                    if (page == null) page = "<meta name=viewport content='width=device-width,initial-scale=1'><body style='font-family:sans-serif;text-align:center;padding:48px'><h2>\u062A\u0639\u0630\u0651\u0631 \u0627\u0644\u0627\u062A\u0635\u0627\u0644</h2><button onclick='location.href=__URL__'>\u0625\u0639\u0627\u062F\u0629 \u0627\u0644\u0645\u062D\u0627\u0648\u0644\u0629</button></body>";
+                    v.loadDataWithBaseURL(null, page.replace("__URL__", JSONObject.quote(lastUrl)), "text/html", "UTF-8", null);
+                    hideSplash();
                 }
             }
             @Override
             public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest r) {
                 String u = r.getUrl().toString();
                 String sc = r.getUrl().getScheme();
+                if (externalBrowser && r.isForMainFrame() && r.hasGesture() && (sc != null && (sc.equals("http") || sc.equals("https"))) && isExternal(r.getUrl())) {
+                    try { startActivity(new Intent(Intent.ACTION_VIEW, r.getUrl())); } catch (Exception e) { /* مفيش متصفح */ }
+                    return true;
+                }
                 if (sc == null || sc.equals("http") || sc.equals("https") || sc.equals("file") || sc.equals("about") || sc.equals("data") || sc.equals("blob") || sc.equals("javascript")) return false;
                 try { startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(u))); } catch (Exception e) { /* مفيش تطبيق */ }
                 return true;
             }
         });
         web.setWebChromeClient(new WebChromeClient() {
+            @Override public void onShowCustomView(View v, CustomViewCallback cb) {
+                if (customView != null) { cb.onCustomViewHidden(); return; }
+                customView = v; customCb = cb;
+                rootView.addView(v, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+                web.setVisibility(View.GONE);
+                getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+            }
+            @Override public void onHideCustomView() { leaveCustomView(); }
             @Override public void onProgressChanged(WebView v, int p) { bar.setProgress(p); bar.setVisibility(p < 100 ? View.VISIBLE : View.GONE); }
             @Override public boolean onJsAlert(WebView v, String u, String m, final JsResult r) {
                 new AlertDialog.Builder(MainActivity.this).setMessage(m).setCancelable(false)
@@ -218,8 +273,96 @@ public class MainActivity extends Activity {
             if (!missing.isEmpty()) requestPermissions(missing.toArray(new String[0]), REQ_PERMS);
         }
 
+        if (files != null) files.ingest(getIntent()); // التطبيق اتفتح بملف أو مشاركة
         if (savedInstanceState != null) web.restoreState(savedInstanceState);
         else web.loadUrl(remote ? url : "file:///android_asset/www/index.html");
+        String upd = cfg.optString("updateUrl", "");
+        if (!upd.isEmpty()) Updater.check(this, upd, false);
+    }
+
+    /** ألوان شريط الحالة وأزرار النظام (اختياري). */
+    private void applySystemBars() {
+        String sb = cfg.optString("statusBarColor", ""), nb = cfg.optString("navBarColor", "");
+        if (Build.VERSION.SDK_INT < 21 || (sb.isEmpty() && nb.isEmpty())) return;
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+        View decor = getWindow().getDecorView();
+        int vis = decor.getSystemUiVisibility();
+        try {
+            if (!sb.isEmpty()) {
+                int c = Color.parseColor(sb);
+                getWindow().setStatusBarColor(c);
+                if (Build.VERSION.SDK_INT >= 23 && luma(c) > 0.6) vis |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+            }
+        } catch (Exception e) { /* لون غلط: نتجاهله */ }
+        try {
+            if (!nb.isEmpty()) {
+                int c = Color.parseColor(nb);
+                getWindow().setNavigationBarColor(c);
+                if (Build.VERSION.SDK_INT >= 26 && luma(c) > 0.6) vis |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+            }
+        } catch (Exception e) { /* لون غلط: نتجاهله */ }
+        decor.setSystemUiVisibility(vis);
+    }
+
+    private static double luma(int c) { return (0.299 * Color.red(c) + 0.587 * Color.green(c) + 0.114 * Color.blue(c)) / 255.0; }
+
+    /** شاشة بداية: لون الخلفية + أيقونة التطبيق واسمه لحد ما الصفحة تحمّل. */
+    private void addSplash(FrameLayout root, int bg) {
+        int c = bg;
+        try { String sc = cfg.optString("splashColor", ""); if (!sc.isEmpty()) c = Color.parseColor(sc); } catch (Exception e) { /* نفس لون الخلفية */ }
+        FrameLayout sp = new FrameLayout(this);
+        sp.setBackgroundColor(c);
+        sp.setClickable(true);
+        android.widget.LinearLayout col = new android.widget.LinearLayout(this);
+        col.setOrientation(android.widget.LinearLayout.VERTICAL);
+        col.setGravity(Gravity.CENTER);
+        float d = getResources().getDisplayMetrics().density;
+        try {
+            android.widget.ImageView iv = new android.widget.ImageView(this);
+            iv.setImageDrawable(getPackageManager().getApplicationIcon(getPackageName()));
+            col.addView(iv, new android.widget.LinearLayout.LayoutParams((int) (96 * d), (int) (96 * d)));
+        } catch (Exception e) { /* من غير أيقونة */ }
+        TextView t = new TextView(this);
+        try { t.setText(getPackageManager().getApplicationLabel(getApplicationInfo())); } catch (Exception e) { /* من غير اسم */ }
+        t.setTextSize(20);
+        t.setPadding(0, (int) (14 * d), 0, 0);
+        t.setTextColor(luma(c) > 0.55 ? 0xFF1E1B4B : Color.WHITE);
+        col.addView(t);
+        sp.addView(col, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER));
+        root.addView(sp, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        splashView = sp;
+        sp.postDelayed(new Runnable() { public void run() { hideSplash(); } }, 8000); // أمان: ما يفضلش للأبد
+    }
+
+    private void hideSplash() {
+        final View sp = splashView;
+        if (sp == null) return;
+        splashView = null;
+        sp.animate().alpha(0f).setDuration(250).withEndAction(new Runnable() { public void run() { if (sp.getParent() instanceof ViewGroup) ((ViewGroup) sp.getParent()).removeView(sp); } }).start();
+    }
+
+    private boolean isExternal(Uri u) {
+        String h = u.getHost();
+        if (h == null) return false;
+        if (baseHost.isEmpty()) return true; // تطبيق محلي: أي رابط http(s) بره التطبيق
+        return !(h.equals(baseHost) || h.endsWith("." + baseHost) || baseHost.endsWith("." + h));
+    }
+
+    private void leaveCustomView() {
+        if (customView == null) return;
+        rootView.removeView(customView);
+        customView = null;
+        web.setVisibility(View.VISIBLE);
+        if (customCb != null) { customCb.onCustomViewHidden(); customCb = null; }
+        getWindow().getDecorView().setSystemUiVisibility(normalUiFlags);
+        applyFullscreen();
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        if (files != null && files.ingest(intent) && web != null) web.evaluateJavascript("window.__h2aPoll&&window.__h2aPoll(false)", null);
     }
 
     /** سحب للتحديث: بس لما الصفحة في أولها. بيشتغل بدون ما يمنع أي لمس عادي. */
@@ -271,6 +414,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int req, int res, Intent data) {
         super.onActivityResult(req, res, data);
+        if (req == FilesBridge.REQ_TREE && files != null) { files.onTreeResult(res, data); return; }
         if (req == REQ_FILE && fileCallback != null) {
             Uri[] r = res == RESULT_OK ? WebChromeClient.FileChooserParams.parseResult(res, data) : null;
             fileCallback.onReceiveValue(r);
@@ -311,8 +455,15 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        if (web != null && web.canGoBack()) web.goBack();
-        else super.onBackPressed();
+        if (customView != null) { leaveCustomView(); return; }
+        if (web != null && web.canGoBack()) { web.goBack(); return; }
+        if (confirmExit) {
+            new AlertDialog.Builder(this).setMessage("تقفل التطبيق؟")
+                .setPositiveButton("اقفل", new DialogInterface.OnClickListener() { public void onClick(DialogInterface d, int w) { MainActivity.super.onBackPressed(); } })
+                .setNegativeButton("لا", null).show();
+            return;
+        }
+        super.onBackPressed();
     }
 
     @Override
