@@ -34,6 +34,7 @@ public final class ApkBuilder {
         public File zip;       // ZIP موقع كامل (أو null)
         public boolean remote; // وضع رابط: مفيش ملفات ويب
         public IconProvider icons; // اختياري
+        public Set<String> aliases; // activity-alias المطلوب تفعيلها (فتح بواسطة/مشاركة)
         public int iconsReplaced;  // نتيجة: كام أيقونة اتبدّلت (0 يعني القالب مختلف عن المتوقع)
     }
 
@@ -62,7 +63,7 @@ public final class ApkBuilder {
                     rep.put(LABEL_PLACEHOLDER, spec.label.trim());
                     rep.put(VERSION_PLACEHOLDER, spec.versionName);
                     rep.put(AUTH_PLACEHOLDER, spec.packageName + ".sharefiles");
-                    bytes = AxmlPatcher.patch(bytes, rep, spec.versionCode);
+                    bytes = AxmlPatcher.patch(bytes, rep, spec.versionCode, spec.aliases);
                 } else if (spec.icons != null && name.startsWith("res/") && name.endsWith(".png") && (isMarked(bytes) || ICON.matcher(name).matches())) {
                     int px = pngWidth(bytes);
                     bytes = spec.icons.png(px > 0 ? px : iconSize(name));
