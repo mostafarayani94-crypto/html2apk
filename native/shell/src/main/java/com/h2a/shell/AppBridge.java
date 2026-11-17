@@ -220,8 +220,13 @@ public class AppBridge implements SensorEventListener {
             public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimeType, long length) {
                 String name = URLUtil.guessFileName(url, contentDisposition, mimeType);
                 if (url.startsWith("blob:")) {
-                    if (!exposed) { toastUi("Download not supported"); return; }
-                    final String js = "(function(){fetch(" + JSONObject.quote(url) + ").then(function(r){return r.blob();}).then(function(b){var f=new FileReader();f.onloadend=function(){AndroidAPI.saveDataUrl(" + JSONObject.quote(name) + ",f.result);};f.readAsDataURL(b);});})();";
+                    // روابط blob من غير download="..." (مثلاً location.href): نسمّي الملف باسم الصفحة + الامتداد المناسب
+                    final String js = "(function(){var m={'text/csv':'.csv','text/plain':'.txt','application/json':'.json','text/html':'.html','application/pdf':'.pdf','image/png':'.png','image/jpeg':'.jpg','application/zip':'.zip'};"
+                        + "fetch(" + JSONObject.quote(url) + ").then(function(r){return r.blob();}).then(function(b){var n=((document.title||'').trim()||'download');"
+                        + "if(!/\\.[A-Za-z0-9]{1,6}$/.test(n))n+=(m[(b.type||'').split(';')[0]]||'');"
+                        + "var f=new FileReader();f.onloadend=function(){var s=String(f.result);"
+                        + "if(window.H2ADownload)H2ADownload.save(n,b.type||'application/octet-stream',s.slice(s.indexOf(',')+1));"
+                        + "else if(window.AndroidAPI)AndroidAPI.saveDataUrl(n,s);};f.readAsDataURL(b);});})();";
                     act.runOnUiThread(new Runnable() { public void run() { web.evaluateJavascript(js, null); } });
                 } else if (url.startsWith("data:")) {
                     saveDataUrl(name, url);
