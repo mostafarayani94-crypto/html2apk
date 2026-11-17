@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -172,6 +173,13 @@ final class Projects {
         return m;
     }
 
+    static final String[] OPEN_WITH = {"html", "pdf", "office", "image", "any", "send", "sendmulti"};
+
+    private static boolean jsonHas(JSONArray a, String v) {
+        for (int i = 0; i < a.length(); i++) if (v.equals(a.optString(i))) return true;
+        return false;
+    }
+
     private static JSONObject sanitize(JSONObject s) throws Exception {
         JSONObject o = new JSONObject();
         String orient = s.optString("orientation", "auto");
@@ -184,6 +192,25 @@ final class Projects {
         for (String f : flags) o.put(f, s.optBoolean(f, false));
         o.put("downloads", s.optBoolean("downloads", true));
         o.put("bridge", s.optBoolean("bridge", true));
+        // ميزات إضافية
+        for (String f : new String[]{"splash", "allowZoom", "confirmExit", "saveFolder"}) o.put(f, s.optBoolean(f, false));
+        for (String k : new String[]{"statusBarColor", "navBarColor", "splashColor"}) {
+            String c = s.optString(k, "");
+            o.put(k, COLOR.matcher(c).matches() ? c : "");
+        }
+        o.put("externalLinks", s.optString("externalLinks", "app").equals("browser") ? "browser" : "app");
+        String upd = s.optString("updateUrl", "").trim();
+        if (!upd.isEmpty() && (!upd.startsWith("https://") || upd.length() > 500)) throw new IOException("رابط التحديث لازم يبدأ بـ https://");
+        o.put("updateUrl", upd);
+        int manual = s.optInt("versionCodeManual", 0);
+        o.put("versionCodeManual", manual < 0 || manual > 2000000000 ? 0 : manual);
+        JSONArray ow = new JSONArray();
+        JSONArray owIn = s.optJSONArray("openWith");
+        if (owIn != null) for (int i = 0; i < owIn.length(); i++) {
+            String k = owIn.optString(i);
+            if (Arrays.asList(OPEN_WITH).contains(k) && !jsonHas(ow, k)) ow.put(k);
+        }
+        o.put("openWith", ow);
         JSONArray perms = new JSONArray();
         JSONArray in = s.optJSONArray("permissions");
         if (in != null) for (int i = 0; i < in.length(); i++) {
@@ -229,7 +256,10 @@ final class Projects {
         JSONObject m = readMeta(id);
         JSONObject s = m.getJSONObject("settings");
         String name = m.getString("name");
-        int versionCode = m.optInt("versionCode", 0) + 1;
+        int prevCode = m.optInt("versionCode", 0);
+        int manualCode = s.optInt("versionCodeManual", 0);
+        if (manualCode > 0 && manualCode <= prevCode) throw new IOException("رقم البناء اليدوي (" + manualCode + ") لازم يكون أكبر من الحالي (" + prevCode + ")، وإلا أندرويد مش هيقبل التحديث");
+        int versionCode = manualCode > 0 ? manualCode : prevCode + 1;
 
         JSONObject shell = new JSONObject();
         shell.put("orientation", s.optString("orientation", "auto"));
@@ -243,12 +273,20 @@ final class Projects {
         shell.put("bridge", s.optBoolean("bridge", true));
         shell.put("downloads", s.optBoolean("downloads", true));
         shell.put("permissions", s.optJSONArray("permissions") != null ? s.getJSONArray("permissions") : new JSONArray());
+        for (String f : new String[]{"splash", "allowZoom", "confirmExit", "saveFolder"}) shell.put(f, s.optBoolean(f, false));
+        for (String k : new String[]{"statusBarColor", "navBarColor", "splashColor", "updateUrl"}) shell.put(k, s.optString(k, ""));
+        shell.put("externalLinks", s.optString("externalLinks", "app"));
 
         ApkBuilder.Spec spec = new ApkBuilder.Spec();
         spec.packageName = m.getString("pkg");
         spec.label = name;
         spec.versionName = m.optString("versionName", "1.0");
         spec.versionCode = versionCode;
+        JSONArray ow = s.optJSONArray("openWith");
+        if (ow != null && ow.length() > 0) {
+            spec.aliases = new java.util.HashSet<String>();
+            for (int i = 0; i < ow.length(); i++) spec.aliases.add("com.h2a.shell.alias." + ow.optString(i));
+        }
         String source = m.optString("source", "html");
         if (source.equals("url")) {
             shell.put("url", m.getString("url"));
