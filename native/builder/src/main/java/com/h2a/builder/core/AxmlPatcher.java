@@ -7,6 +7,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * بيعدّل AndroidManifest.xml الثنائي (AXML) من غير ما يفكّه كله:
@@ -22,6 +23,11 @@ public final class AxmlPatcher {
     private AxmlPatcher() { }
 
     public static byte[] patch(byte[] axml, Map<String, String> replacements, Integer versionCode) {
+        return patch(axml, replacements, versionCode, null);
+    }
+
+    /** enabledAliases: أسماء عناصر activity-alias اللي تتفعّل (بتتغيّر قيمة enabled من false إلى true). */
+    public static byte[] patch(byte[] axml, Map<String, String> replacements, Integer versionCode, Set<String> enabledAliases) {
         byte[] data = axml.clone();
         ByteBuffer bb = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
         if (data.length < 8 || (bb.getShort(0) & 0xFFFF) != CHUNK_XML) throw new IllegalArgumentException("مش ملف AXML");
@@ -31,6 +37,7 @@ public final class AxmlPatcher {
         List<String> strings = readPool(bb, poolStart);
 
         if (versionCode != null) patchVersionCode(bb, poolStart + poolSize, strings, versionCode);
+        if (enabledAliases != null && !enabledAliases.isEmpty()) enableAliases(bb, poolStart + poolSize, strings, enabledAliases);
 
         boolean utf8 = (bb.getInt(poolStart + 16) & FLAG_UTF8) != 0;
         List<String> out = new ArrayList<String>(strings.size());
@@ -152,5 +159,41 @@ public final class AxmlPatcher {
             off += size;
         }
         if (!done) throw new IllegalArgumentException("versionCode مش لاقيه في الـ manifest");
+    }
+
+    /** بيفعّل عناصر activity-alias المطلوبة: android:enabled من false إلى true (قيمة boolean ثنائية). */
+    private static void enableAliases(ByteBuffer bb, int off, List<String> strings, Set<String> wanted) {
+        int limit = bb.limit();
+        java.util.HashSet<String> found = new java.util.HashSet<String>();
+        while (off + 8 <= limit) {
+            int type = bb.getShort(off) & 0xFFFF, size = bb.getInt(off + 4);
+            if (size <= 0) break;
+            if (type == CHUNK_START_ELEMENT) {
+                int ext = off + 16;
+                int nameIdx = bb.getInt(ext + 4);
+                if (nameIdx >= 0 && nameIdx < strings.size() && "activity-alias".equals(strings.get(nameIdx))) {
+                    int attrStart = bb.getShort(ext + 8) & 0xFFFF, attrSize = bb.getShort(ext + 10) & 0xFFFF, attrCount = bb.getShort(ext + 12) & 0xFFFF;
+                    String aliasName = null;
+                    int enabledAt = -1;
+                    for (int i = 0; i < attrCount; i++) {
+                        int a = ext + attrStart + i * attrSize;
+                        int an = bb.getInt(a + 4);
+                        if (an < 0 || an >= strings.size()) continue;
+                        String n = strings.get(an);
+                        if ("name".equals(n)) { int raw = bb.getInt(a + 8); if (raw >= 0 && raw < strings.size()) aliasName = strings.get(raw); }
+                        else if ("enabled".equals(n)) enabledAt = a;
+                    }
+                    if (aliasName != null && wanted.contains(aliasName)) {
+                        if (enabledAt < 0) throw new IllegalArgumentException("الـ alias " + aliasName + " مفيهوش enabled في القالب");
+                        bb.putInt(enabledAt + 8, -1);
+                        bb.put(enabledAt + 15, (byte) 0x12);   // TYPE_INT_BOOLEAN
+                        bb.putInt(enabledAt + 16, -1);         // true
+                        found.add(aliasName);
+                    }
+                }
+            }
+            off += size;
+        }
+        for (String w : wanted) if (!found.contains(w)) throw new IllegalArgumentException("الـ alias " + w + " مش موجود في القالب (حدّث القالب بإعادة بناء التطبيق الباني)");
     }
 }
