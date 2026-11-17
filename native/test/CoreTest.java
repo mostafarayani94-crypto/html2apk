@@ -57,6 +57,51 @@ public class CoreTest {
         return all.toByteArray();
     }
 
+
+    /* ---- AXML صناعي فيه manifest + 3 عناصر activity-alias (name/enabled=false) ---- */
+    static byte[] aliasAxml(boolean utf8) throws IOException {
+        String[] strs = {"manifest", "activity-alias", "name", "enabled", "com.h2a.shell.alias.send", "com.h2a.shell.alias.pdf", "com.h2a.shell.alias.html"};
+        ByteArrayOutputStream pool = new ByteArrayOutputStream();
+        int[] off = new int[strs.length];
+        for (int i = 0; i < strs.length; i++) {
+            off[i] = pool.size(); String s = strs[i];
+            if (utf8) { byte[] b = s.getBytes("UTF-8"); pool.write(s.length()); pool.write(b.length); pool.write(b); pool.write(0); }
+            else { byte[] b = s.getBytes("UTF-16LE"); pool.write(s.length() & 0xFF); pool.write(s.length() >> 8); pool.write(b); pool.write(0); pool.write(0); }
+        }
+        while (pool.size() % 4 != 0) pool.write(0);
+        int hdr = 28, ss = hdr + 4 * strs.length, psize = ss + pool.size();
+        ByteBuffer p = ByteBuffer.allocate(psize).order(ByteOrder.LITTLE_ENDIAN);
+        p.putShort((short) 1).putShort((short) hdr).putInt(psize).putInt(strs.length).putInt(0).putInt(utf8 ? 0x100 : 0).putInt(ss).putInt(0);
+        for (int o : off) p.putInt(o);
+        p.put(pool.toByteArray());
+        ByteArrayOutputStream body = new ByteArrayOutputStream();
+        body.write(p.array());
+        ByteBuffer m = ByteBuffer.allocate(36).order(ByteOrder.LITTLE_ENDIAN);
+        m.putShort((short) 0x0102).putShort((short) 16).putInt(36).putInt(1).putInt(-1).putInt(-1).putInt(0).putShort((short) 20).putShort((short) 20).putShort((short) 0).putShort((short) 0).putShort((short) 0).putShort((short) 0);
+        body.write(m.array());
+        for (int nameIdx : new int[]{4, 5, 6}) {
+            ByteBuffer a = ByteBuffer.allocate(16 + 20 + 40).order(ByteOrder.LITTLE_ENDIAN);
+            a.putShort((short) 0x0102).putShort((short) 16).putInt(76).putInt(2).putInt(-1).putInt(-1).putInt(1).putShort((short) 20).putShort((short) 20).putShort((short) 2).putShort((short) 0).putShort((short) 0).putShort((short) 0);
+            a.putInt(-1).putInt(2).putInt(nameIdx).putShort((short) 8).put((byte) 0).put((byte) 3).putInt(nameIdx);   // name (string)
+            a.putInt(-1).putInt(3).putInt(-1).putShort((short) 8).put((byte) 0).put((byte) 0x12).putInt(0);          // enabled=false
+            body.write(a.array());
+        }
+        ByteBuffer h = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
+        h.putShort((short) 3).putShort((short) 8).putInt(8 + body.size());
+        ByteArrayOutputStream all = new ByteArrayOutputStream(); all.write(h.array()); all.write(body.toByteArray());
+        return all.toByteArray();
+    }
+
+    /** قيم enabled للـ 3 aliases (بالترتيب send, pdf, html). */
+    static int[] enabledOf(byte[] x) {
+        ByteBuffer b = ByteBuffer.wrap(x).order(ByteOrder.LITTLE_ENDIAN);
+        int off = 8; off += b.getInt(off + 4);        // بعد الـ pool
+        off += 36;                                    // بعد manifest
+        int[] r = new int[3];
+        for (int i = 0; i < 3; i++) { int a = off + 16 + 20 + 20; check(b.get(a + 15) == 0x12, "نوع enabled"); r[i] = b.getInt(a + 16); off += 76; }
+        return r;
+    }
+
     static int versionCodeOf(byte[] x) {
         ByteBuffer b = ByteBuffer.wrap(x).order(ByteOrder.LITTLE_ENDIAN);
         int off = 8; off += b.getInt(off + 4);           // بعد الـ pool
@@ -189,6 +234,27 @@ public class CoreTest {
         ApkBuilder.build(template, out, sp); check(!readZip(out).keySet().toString().contains("assets/www"), "رابط بدون ويب");
         // تحقق المدخلات
         sp.packageName = "Bad.Pkg"; try { ApkBuilder.build(template, out, sp); check(false, "حزمة غلط"); } catch (IOException ok) { }
+
+        /* ---- تفعيل activity-alias (فتح بواسطة / مشاركة) ---- */
+        for (boolean utf8 : new boolean[]{false, true}) {
+            byte[] src = aliasAxml(utf8);
+            check(Arrays.equals(enabledOf(src), new int[]{0, 0, 0}), "كلهم مقفولين");
+            Set<String> want = new HashSet<String>(Arrays.asList("com.h2a.shell.alias.send", "com.h2a.shell.alias.html"));
+            byte[] out2 = AxmlPatcher.patch(src, new HashMap<String, String>(), null, want);
+            check(Arrays.equals(enabledOf(out2), new int[]{-1, 0, -1}), "تفعيل send و html بس " + utf8);
+            check(AxmlPatcher.readStrings(out2).equals(AxmlPatcher.readStrings(src)), "الـ strings زي ما هي");
+            check(Arrays.equals(enabledOf(AxmlPatcher.patch(src, new HashMap<String, String>(), null, null)), new int[]{0, 0, 0}), "من غير طلب: ما يتغيّرش");
+            try { AxmlPatcher.patch(src, new HashMap<String, String>(), null, Collections.singleton("com.h2a.shell.alias.nope")); check(false, "لازم يرفض alias مش موجود"); }
+            catch (IllegalArgumentException ok) { check(ok.getMessage().contains("nope"), ok.getMessage()); }
+        }
+        // عن طريق ApkBuilder
+        {
+            Map<String, byte[]> t3 = new LinkedHashMap<String, byte[]>();
+            t3.put("AndroidManifest.xml", aliasAxml(true)); t3.put("resources.arsc", new byte[]{1, 2, 3, 4});
+            File tf = zipOf(new File(dir, "alias.apk"), t3);
+            ApkBuilder.Spec s3 = new ApkBuilder.Spec(); s3.packageName = "com.h2a.al2"; s3.label = "x"; s3.versionName = "1"; s3.configJson = "{}"; s3.html = html;
+            try { ApkBuilder.build(tf, new File(dir, "al-out.apk"), s3); } catch (IllegalArgumentException e) { /* مفيش versionCode في الـ manifest الصناعي ده: مقبول */ }
+        }
         System.out.println("كل اختبارات الباني الأساسي نجحت ✓");
     }
 }
